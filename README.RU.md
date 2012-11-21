@@ -5,6 +5,8 @@
 - Упрощение инициализации
 - Упрощение и стандартизация общения между модулями
 - Модуль — независимая сущность, со всеми вытекающими
+- Самодокументирование
+- Зависимости модулей
 
 # Принципы
 
@@ -41,6 +43,8 @@
     M.modulesEvents()
     M.methods()
     M.init()
+    M.dependsOn()
+    M.extends()
 
 # В объекте модуля
 
@@ -58,6 +62,19 @@
 
     @settings
     @setOption()
+
+# В window
+
+    .module %module_name%, ->
+    .modules
+      .bind %module_name%, %event_name%, ->
+      .find %module_name%
+      .initAll()
+    .action '%controller%#%action%', ->
+
+# В $.fn
+
+    .module %module_name% # возвращает массив объектов модулей
 
 # Чего не будет
 
