@@ -1,3 +1,5 @@
+# Util function that helps run some code on particular action (in server-side terms).
+
 # It isn't part of dom-modules, 
 # and can be dropped peacefully in case you don't need it.
 # As well as you can use it without dom-modules.
@@ -16,6 +18,7 @@ action = (args...) ->
 #   action.matcher [['controller_name', 'action_name'], [...], ...]
 action.matcher = (actions) ->
   selector = (for a in actions
+    # Suppose you add .controller-foo and .action-bar classes to body on server-side.
     "body.controller-#{a[0]}.action-#{a[1]}").join ', '
   $(selector).length > 0
 

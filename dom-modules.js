@@ -3,6 +3,10 @@
   var action,
     __slice = [].slice;
 
+  jQuery.prototype.htmlInserted = function() {
+    return this.trigger('html-inserted');
+  };
+
   action = function() {
     var args;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
