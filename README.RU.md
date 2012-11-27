@@ -84,16 +84,3 @@
 
     .module %module_name% # возвращает массив объектов модулей
     .htmlIserted() # провоцирует вызовы initAll() и updateTree()
-
-
-# CSS-селектор → имя атрибута
-
-- `div` — `div`  
-- `@button` — `button`
-- `.button` — `button`
-- `@button a` — `buttonA`
-- `@my-button` — `myButton`
-- `input[type=text]` — `inputTypeText`
-
-Split to words (delimetr is all not letters and not digits characters) then join words in mixedCase notation.
-

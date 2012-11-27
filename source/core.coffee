@@ -1,12 +1,14 @@
 modules = {}
 moduleInstances = {}
 
-class window.BaseModule
+class BaseModule
 
   @NAME: 'BaseModule' 
   @EVENT_PREFIX: 'base-module'
   @DEFAULT_SETTINGS: {} 
-  @ROOT_SELECTOR: null 
+  @ROOT_SELECTOR: null
+  @ELEMENTS: {}
+  @INIT: 'none'
 
   constructor: (@root, settings) ->
     @root.data @constructor.NAME, @
@@ -19,7 +21,8 @@ class window.BaseModule
     @initializer?()
 
   updateTree: ->
-    # TODO
+    for name, element of @constructor.ELEMENTS when not element.dynamic
+      @[name] = @find element.selector
 
   find: (args...) ->
     @root.find args...
@@ -46,6 +49,7 @@ class ModuleInfo
   @DEFAULT_INIT: 'none'
 
   _methods: null
+  _root: null
   _elements: null
   _events: null
   _globalEvents: null
@@ -72,8 +76,43 @@ class ModuleInfo
       throw 'wrong value'
     @_init = value
 
+  root: (rootSelector) ->
+    @_root = rootSelector
+
+  # `div` → `div`  
+  # `@button` → `button`
+  # `.button` → `button`
+  # `@button a` → `buttonA`
+  # `@my-button` → `myButton`
+  # `input[type=text]` → `inputTypeText`
+  #
+  # Split to words (delimetr is all not letters and not digits characters) 
+  # then join words in mixedCase notation.
+  @selectorToName: (selector) ->
+    result = (for word in selector.split(/[^a-z0-9]+/i)
+      word.charAt(0).toUpperCase() + word.slice(1)).join ''
+    result.charAt(0).toLowerCase() + result.slice(1)
+
+  element: (selector, name=null, dynamic=false) ->
+    if name is null
+      name = @constructor.selectorToName selector
+    @_elements[name] = {selector, dynamic}
+
   tree: (treeString) ->
-    # TODO
+    lines = ($.trim(line) for line in treeString.split('\n'))
+    lines = (line for line in lines when line != '')
+    @root lines.shift()
+    for line in lines
+      [selector, options] = line.split('/')
+      [selector, options] = [$.trim(selector), $.trim(options)]
+      if options != ''
+        [name, options...] = options.split /\s+/
+        name = $.trim(name)
+        options = ($.trim(o) for o in options)
+      else
+        name = null
+        options = []
+      @element selector, name, 'dynamic' in options
 
   events: (eventsString) ->
     # TODO
@@ -100,32 +139,42 @@ lastNameId = 0
 genName = -> 
   "Anonimous#{lastNameId++}"
 
-buildModule = (name, builder) ->
+buildModule = (moduleName, builder) ->
 
   if builder is undefined
-    builder = name
-    name = genName()
+    builder = moduleName
+    moduleName = genName()
 
-  info = new ModuleInfo name
+  info = new ModuleInfo moduleName
   builder info
 
   newModule = class extends BaseModule
 
-  newModule.NAME = name
+  newModule.NAME = moduleName
   newModule.DEFAULT_SETTINGS = info._defaultSettings
-  newModule.EVENT_PREFIX = info._eventPrefix or name
+  newModule.EVENT_PREFIX = info._eventPrefix or moduleName
 
   for name, value of info._methods
     newModule::[name] = value
 
-  #TODO: elements
+  newModule.ROOT_SELECTOR = info._root
+  newModule.ELEMENTS = info._elements
+
+  for name, element of newModule.ELEMENTS
+    if element.dynamic
+      do (name, element) ->
+        newModule::[name] = ->
+          @find element.selector
+    else
+      newModule::[name] = $()
+
   #TODO: events
 
-  modules[name] = newModule
+  modules[moduleName] = newModule
 
   unless /^Anonimous[0-9]+$/.test name
     # TODO: handle complex name
-    window[name] = module
+    window[moduleName] = module
 
   return newModule
   
@@ -141,7 +190,7 @@ modulesAPI =
       true
 
   initAll: (context) ->
-    for name, Module in modules when Module.ROOT_SELECTOR != null
+    for name, Module in modules when Module.ROOT_SELECTOR != null and Module.INIT is 'load'
       for el in $ Module.ROOT_SELECTOR, context
         $el = $ el
         # FIXME: dirty settings
