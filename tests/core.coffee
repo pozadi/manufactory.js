@@ -15,8 +15,9 @@ test "Dom-modules: elements", ->
   MyModule = module (M) ->
     M.tree """
       .abc
-        [type=button]
-        ul / items
+
+        [type=button]  
+        ul / items %useless_option%  
           li / item dynamic
     """
   equal MyModule.ROOT_SELECTOR, '.abc', 'M.tree() works'
@@ -25,6 +26,7 @@ test "Dom-modules: elements", ->
     items: {selector: 'ul', dynamic: false}
     item: {selector: 'li', dynamic: true}
   }, 'M.tree() works #2')
+  console.log MyModule.ELEMENTS
 
   myDiv = $("""
     <div style="display:none">

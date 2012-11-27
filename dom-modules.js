@@ -93,10 +93,6 @@
 
   ModuleInfo = (function() {
 
-    ModuleInfo.INIT_MODES = ['load', 'lazy', 'none'];
-
-    ModuleInfo.DEFAULT_INIT = 'none';
-
     ModuleInfo.prototype._methods = null;
 
     ModuleInfo.prototype._rootSelector = null;
@@ -122,8 +118,8 @@
       this._events = {};
       this._globalEvents = {};
       this._modulesEvents = {};
-      this._init = this.constructor.DEFAULT_INIT;
       this._defaultSettings = {};
+      this._init = 'none';
     }
 
     ModuleInfo.prototype.methods = function(newMethods) {
@@ -139,18 +135,25 @@
     };
 
     ModuleInfo.selectorToName = function(selector) {
-      var result, word;
-      result = ((function() {
+      var first, word;
+      first = true;
+      return ((function() {
         var _i, _len, _ref, _results;
         _ref = selector.split(/[^a-z0-9]+/i);
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           word = _ref[_i];
-          _results.push(word.charAt(0).toUpperCase() + word.slice(1));
+          if (word !== '') {
+            if (first) {
+              first = false;
+              _results.push(word);
+            } else {
+              _results.push(word.charAt(0).toUpperCase() + word.slice(1));
+            }
+          }
         }
         return _results;
       })()).join('');
-      return result.charAt(0).toLowerCase() + result.slice(1);
     };
 
     ModuleInfo.prototype.element = function(selector, name, dynamic) {
@@ -170,46 +173,19 @@
     };
 
     ModuleInfo.prototype.tree = function(treeString) {
-      var line, lines, name, o, options, selector, _i, _len, _ref, _ref1, _ref2, _results;
-      lines = (function() {
-        var _i, _len, _ref, _results;
-        _ref = treeString.split('\n');
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          line = _ref[_i];
-          _results.push($.trim(line));
-        }
-        return _results;
-      })();
-      lines = (function() {
-        var _i, _len, _results;
-        _results = [];
-        for (_i = 0, _len = lines.length; _i < _len; _i++) {
-          line = lines[_i];
-          if (line !== '') {
-            _results.push(line);
-          }
-        }
-        return _results;
-      })();
+      var line, lines, name, options, selector, _i, _len, _ref, _ref1, _results;
+      lines = _(treeString.split('\n')).map($.trim).filter(function(l) {
+        return l !== '';
+      });
       this.root(lines.shift());
       _results = [];
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
-        _ref = line.split('/'), selector = _ref[0], options = _ref[1];
-        _ref1 = [$.trim(selector), $.trim(options)], selector = _ref1[0], options = _ref1[1];
-        if (options !== '') {
-          _ref2 = options.split(/\s+/), name = _ref2[0], options = 2 <= _ref2.length ? __slice.call(_ref2, 1) : [];
+        _ref = _.map(line.split('/'), $.trim), selector = _ref[0], options = _ref[1];
+        if (options) {
+          _ref1 = options.split(/\s+/), name = _ref1[0], options = 2 <= _ref1.length ? __slice.call(_ref1, 1) : [];
           name = $.trim(name);
-          options = (function() {
-            var _j, _len1, _results1;
-            _results1 = [];
-            for (_j = 0, _len1 = options.length; _j < _len1; _j++) {
-              o = options[_j];
-              _results1.push($.trim(o));
-            }
-            return _results1;
-          })();
+          options = _.map(options, $.trim);
         } else {
           name = null;
           options = [];

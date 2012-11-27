@@ -45,9 +45,6 @@ class BaseModule
 
 class ModuleInfo
 
-  @INIT_MODES: ['load', 'lazy', 'none']
-  @DEFAULT_INIT: 'none'
-
   _methods: null
   _rootSelector: null
   _elements: null
@@ -64,8 +61,8 @@ class ModuleInfo
     @_events = {}
     @_globalEvents = {}
     @_modulesEvents = {}
-    @_init = @constructor.DEFAULT_INIT
     @_defaultSettings = {}
+    @_init = 'none'
 
   # Set all module events
   methods: (newMethods) ->
@@ -93,9 +90,14 @@ class ModuleInfo
   # Split to words (delimetr is all not letters and not digits characters) 
   # then join words in mixedCase notation.
   @selectorToName: (selector) ->
-    result = (for word in selector.split(/[^a-z0-9]+/i)
-      word.charAt(0).toUpperCase() + word.slice(1)).join ''
-    result.charAt(0).toLowerCase() + result.slice(1)
+    first = true
+    (for word in selector.split /[^a-z0-9]+/i when word != ''
+      if first
+        first = false
+        word
+      else
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join ''
 
   # Add element module interact with
   element: (selector, name=null, dynamic=false) ->
@@ -105,16 +107,14 @@ class ModuleInfo
 
   # Set root selector and all elements at once
   tree: (treeString) ->
-    lines = ($.trim(line) for line in treeString.split('\n'))
-    lines = (line for line in lines when line != '')
+    lines = _(treeString.split '\n').map($.trim).filter (l) -> l != '' 
     @root lines.shift()
     for line in lines
-      [selector, options] = line.split('/')
-      [selector, options] = [$.trim(selector), $.trim(options)]
-      if options != ''
+      [selector, options] = _.map line.split('/'), $.trim
+      if options
         [name, options...] = options.split /\s+/
-        name = $.trim(name)
-        options = ($.trim(o) for o in options)
+        name = $.trim name
+        options = _.map options, $.trim
       else
         name = null
         options = []
