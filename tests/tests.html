@@ -6,80 +6,11 @@
   <link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.10.0.css">
   <script src="http://code.jquery.com/qunit/qunit-1.10.0.js"></script>
   <script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
-  <script src="http://coffeescript.org/extras/coffee-script.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.2/underscore-min.js"></script>
   <script src="../dom-modules.js"></script>
-  <script type="text/coffeescript">
-
-    test "action()", ->
-
-      $('body').addClass 'controller-foo action-bar'
-
-      expect 2
-
-      equal typeof action, 'function', "expect action() to be defined"
-
-      action 'foo#bar', ->
-        ok true, 'code runs when it should'
-
-      action 'foo#baz', ->
-        ok false, "code don't run when it should not"
-
-    test ".htmlInserted()", ->
-
-      expect 2
-
-      equal typeof $().htmlInserted, 'function', "expect .htmlInserted() to be defined"
-
-      myDiv = $('<div style="display:none">test</div>').appendTo('body')
-      myDiv.on 'html-inserted', ->
-        ok true, "event handler runs when .htmlInserted() calls"
-
-      myDiv.htmlInserted()
-
-    test "Dom-modules: elements", ->
-
-      MyModule = module (M) ->
-        M.root '.abc'
-      equal MyModule.ROOT_SELECTOR, '.abc', 'M.root() works'
-
-      MyModule = module (M) ->
-        M.element '.abc', 'foo', true
-      deepEqual MyModule.ELEMENTS, {foo: {selector: '.abc', dynamic: true}}, 'M.element() works'
-
-      MyModule = module (M) ->
-        M.element 'input[name=abc]'
-      deepEqual MyModule.ELEMENTS, {inputNameAbc: {selector: 'input[name=abc]', dynamic: false}}, 'M.element() works #2'
-
-      MyModule = module (M) ->
-        M.tree """
-          .abc
-            [type=button]
-            ul / items
-              li / item dynamic
-        """
-      equal MyModule.ROOT_SELECTOR, '.abc', 'M.tree() works'
-      deepEqual(MyModule.ELEMENTS, {
-        typeButton: {selector: '[type=button]', dynamic: false}
-        items: {selector: 'ul', dynamic: false}
-        item: {selector: 'li', dynamic: true}
-      }, 'M.tree() works #2')
-
-      myDiv = $("""
-        <div style="display:none">
-          <input type=button value=lick_me>
-          <ul>
-            <li>1</li> <li>2</li> <li>3</li>
-          </ul>
-        </div>
-      """).appendTo 'body'
-      myInstance = new MyModule myDiv
-      deepEqual myInstance.find('li:last-child').get(), myDiv.find('li:last-child').get(), '@find() method works'
-      deepEqual myInstance.root.get(), myDiv.get(), '@root accesor works'
-      deepEqual myInstance.typeButton.get(), myDiv.find('[value=lick_me]').get(), '@%element_name% accesor works'
-      deepEqual myInstance.item().get(), myDiv.find('li').get(), '@%dynamic_element_name%() accesor works'
-
-
-  </script>
+  <script src="js/action.js"></script>
+  <script src="js/html-inserted.js"></script>
+  <script src="js/core.js"></script>
 </head>
 <body>
   <div id="qunit"></div>

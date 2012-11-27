@@ -84,7 +84,7 @@
     };
 
     BaseModule._fixEventName = function(name) {
-      return "" + this.EVENT_PREFIX + "-" + name;
+      return "" + this.constructor.EVENT_PREFIX + "-" + name;
     };
 
     return BaseModule;
@@ -99,7 +99,7 @@
 
     ModuleInfo.prototype._methods = null;
 
-    ModuleInfo.prototype._root = null;
+    ModuleInfo.prototype._rootSelector = null;
 
     ModuleInfo.prototype._elements = null;
 
@@ -131,14 +131,11 @@
     };
 
     ModuleInfo.prototype.init = function(value) {
-      if (__indexOf.call(this.constructor.INIT_MODES, value) < 0) {
-        throw 'wrong value';
-      }
       return this._init = value;
     };
 
     ModuleInfo.prototype.root = function(rootSelector) {
-      return this._root = rootSelector;
+      return this._rootSelector = rootSelector;
     };
 
     ModuleInfo.selectorToName = function(selector) {
@@ -232,6 +229,11 @@
       return $.extend(this._defaultSettings, newDefaultSettings);
     };
 
+    ModuleInfo.prototype.expectSettings = function() {
+      var expectedSettings;
+      expectedSettings = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    };
+
     ModuleInfo.prototype.dependsOn = function() {
       var moduleNames;
       moduleNames = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
@@ -254,10 +256,11 @@
   };
 
   buildModule = function(moduleName, builder) {
-    var element, info, name, newModule, value, _ref, _ref1;
+    var element, info, lambdaModule, name, newModule, value, _ref, _ref1;
     if (builder === void 0) {
       builder = moduleName;
       moduleName = genName();
+      lambdaModule = true;
     }
     info = new ModuleInfo(moduleName);
     builder(info);
@@ -275,13 +278,13 @@
     newModule.NAME = moduleName;
     newModule.DEFAULT_SETTINGS = info._defaultSettings;
     newModule.EVENT_PREFIX = info._eventPrefix || moduleName;
+    newModule.ROOT_SELECTOR = info._rootSelector;
+    newModule.ELEMENTS = info._elements;
     _ref = info._methods;
     for (name in _ref) {
       value = _ref[name];
       newModule.prototype[name] = value;
     }
-    newModule.ROOT_SELECTOR = info._root;
-    newModule.ELEMENTS = info._elements;
     _ref1 = newModule.ELEMENTS;
     for (name in _ref1) {
       element = _ref1[name];
@@ -296,7 +299,7 @@
       }
     }
     modules[moduleName] = newModule;
-    if (!/^Anonimous[0-9]+$/.test(name)) {
+    if (!lambdaModule) {
       window[moduleName] = module;
     }
     return newModule;
@@ -306,7 +309,7 @@
     find: function(moduleName) {
       return moduleInstances[moduleName] || [];
     },
-    bind: function(moduleName, eventName, callback) {
+    on: function(moduleName, eventName, callback) {
       return $(document).on(modules[moduleName]._fixEventName(eventName), function(e) {
         var moduleInstance;
         moduleInstance = $(e.target).modules(moduleName)[0];

@@ -4,9 +4,16 @@ sys = require 'sys'
 sources = 'source/core source/html-inserted source/action'
 output = 'dom-modules'
 
+testsSources = 'tests/core tests/html-inserted tests/action'
+testsOutput = 'tests/js'
+
+run = (comand) ->
+  child = exec comand
+  child.stdout.on 'data', (data) -> sys.print data
+
 task 'build', 'build things', ->
-  child = exec "coffee -c -j #{output} #{sources}"
+  run "coffee -c -j #{output} #{sources}"
 
 task 'watch', 'watch things to be updated', ->
-  child = exec "coffee -cw -j #{output} #{sources}"
-  child.stdout.on 'data', (data) -> sys.print data
+  run "coffee -cw -j #{output} #{sources}"
+  run "coffee -cw -o #{testsOutput} #{testsSources}"

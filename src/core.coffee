@@ -40,7 +40,7 @@ class BaseModule
     @settings[name] = value
 
   @_fixEventName: (name) ->
-    "#{@EVENT_PREFIX}-#{name}"
+    "#{@constructor.EVENT_PREFIX}-#{name}"
 
 
 class ModuleInfo
@@ -49,7 +49,7 @@ class ModuleInfo
   @DEFAULT_INIT: 'none'
 
   _methods: null
-  _root: null
+  _rootSelector: null
   _elements: null
   _events: null
   _globalEvents: null
@@ -67,17 +67,21 @@ class ModuleInfo
     @_init = @constructor.DEFAULT_INIT
     @_defaultSettings = {}
 
+  # Set all module events
   methods: (newMethods) ->
     $.extend @_methods, newMethods
 
+  # Set initialization mode
+  # Takes one of
+  #  'load'
+  #  'lazy'
+  #  'none'
   init: (value) ->
-    unless value in @constructor.INIT_MODES
-      # FIXME: do it properly
-      throw 'wrong value'
     @_init = value
 
+  # Set root selector
   root: (rootSelector) ->
-    @_root = rootSelector
+    @_rootSelector = rootSelector
 
   # `div` → `div`  
   # `@button` → `button`
@@ -93,11 +97,13 @@ class ModuleInfo
       word.charAt(0).toUpperCase() + word.slice(1)).join ''
     result.charAt(0).toLowerCase() + result.slice(1)
 
+  # Add element module interact with
   element: (selector, name=null, dynamic=false) ->
     if name is null
       name = @constructor.selectorToName selector
     @_elements[name] = {selector, dynamic}
 
+  # Set root selector and all elements at once
   tree: (treeString) ->
     lines = ($.trim(line) for line in treeString.split('\n'))
     lines = (line for line in lines when line != '')
@@ -114,24 +120,36 @@ class ModuleInfo
         options = []
       @element selector, name, 'dynamic' in options
 
+  # Set all DOM events module wants to handle
   events: (eventsString) ->
     # TODO
     
+  # Set all modules events module wants to handle 
   modulesEvents: (modulesEventsString) ->
     # TODO
 
+  # Set all global DOM events module wants to handle
   globalEvents: (globalEventsString) ->
     # TODO
   
+  # Set default module settings
   defaultSettings: (newDefaultSettings) ->
     $.extend @_defaultSettings, newDefaultSettings
 
+  expectSettings: (expectedSettings...) ->
+    
+
+  # 
   dependsOn: (moduleNames...) ->
     # TODO
 
+  # 
   extends: (moduleName) ->
     # TODO
 
+  # Set module event prefix
+  # That prefix will added to module event name, when it will proxied
+  # to DOM event
   eventPrefix: (prefix) ->
     @_eventPrefix = prefix
 
@@ -144,6 +162,7 @@ buildModule = (moduleName, builder) ->
   if builder is undefined
     builder = moduleName
     moduleName = genName()
+    lambdaModule = true
 
   info = new ModuleInfo moduleName
   builder info
@@ -153,12 +172,11 @@ buildModule = (moduleName, builder) ->
   newModule.NAME = moduleName
   newModule.DEFAULT_SETTINGS = info._defaultSettings
   newModule.EVENT_PREFIX = info._eventPrefix or moduleName
+  newModule.ROOT_SELECTOR = info._rootSelector
+  newModule.ELEMENTS = info._elements
 
   for name, value of info._methods
     newModule::[name] = value
-
-  newModule.ROOT_SELECTOR = info._root
-  newModule.ELEMENTS = info._elements
 
   for name, element of newModule.ELEMENTS
     if element.dynamic
@@ -172,7 +190,7 @@ buildModule = (moduleName, builder) ->
 
   modules[moduleName] = newModule
 
-  unless /^Anonimous[0-9]+$/.test name
+  unless lambdaModule
     # TODO: handle complex name
     window[moduleName] = module
 
@@ -183,7 +201,7 @@ modulesAPI =
   find: (moduleName) ->
     moduleInstances[moduleName] or []
 
-  bind: (moduleName, eventName, callback) ->
+  on: (moduleName, eventName, callback) ->
     $(document).on modules[moduleName]._fixEventName(eventName), (e) ->
       moduleInstance = $(e.target).modules(moduleName)[0]
       callback moduleInstance if moduleInstance
