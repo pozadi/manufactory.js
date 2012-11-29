@@ -1,5 +1,5 @@
-modules = {}
-moduleInstances = {}
+__modules = {}
+__moduleInstances = {}
 
 class BaseModule
 
@@ -21,9 +21,9 @@ class BaseModule
     @root.data @constructor.NAME, @
     @updateTree()
     @root.on 'html-inserted', => @updateTree()
-    if moduleInstances[@constructor.NAME] is undefined
-      moduleInstances[@constructor.NAME] = []
-    moduleInstances[@constructor.NAME].push @
+    if __moduleInstances[@constructor.NAME] is undefined
+      __moduleInstances[@constructor.NAME] = []
+    __moduleInstances[@constructor.NAME].push @
     @initializer?()
 
   updateTree: ->
@@ -183,6 +183,7 @@ buildModule = (moduleName, builder) ->
   newModule.ROOT_SELECTOR = info._rootSelector
   newModule.ELEMENTS = info._elements
   newModule.EXPECTED_SETTINGS = info._expectedSettings
+  newModule.INIT = info._init
 
   for name, value of info._methods
     newModule::[name] = value
@@ -197,7 +198,7 @@ buildModule = (moduleName, builder) ->
 
   #TODO: events
 
-  modules[moduleName] = newModule
+  __modules[moduleName] = newModule
 
   unless lambdaModule
     parts = moduleName.split '.'
@@ -209,29 +210,38 @@ buildModule = (moduleName, builder) ->
       currentScope = currentScope[part]
     currentScope[theName] = newModule
 
+  if newModule.INIT is 'load'
+    $ ->
+      modulesAPI.init newModule.NAME
+
   return newModule
   
 modulesAPI = 
 
   find: (moduleName) ->
-    moduleInstances[moduleName] or []
+    __moduleInstances[moduleName] or []
 
   on: (moduleName, eventName, callback) ->
-    $(document).on modules[moduleName].fixEventName(eventName), (e) ->
+    $(document).on __modules[moduleName].fixEventName(eventName), (e) ->
       moduleInstance = $(e.target).modules(moduleName)[0]
       callback moduleInstance if moduleInstance
       true
 
-  initAll: (context) ->
-    for name, Module in modules when Module.ROOT_SELECTOR != null and Module.INIT is 'load'
-      # FIXME: what if context is module root itself
-      for el in $ Module.ROOT_SELECTOR, context
-        new Module($ el)
+  init: (moduleName, Module = __modules[moduleName], context = document) ->
+    if Module
+      elements = $(Module.ROOT_SELECTOR, context)
+        .add $(context).filter(Module.ROOT_SELECTOR)
+      for el in elements
+        if $(el).modules(moduleName).length is 0
+          new Module($ el)
+
+  initAll: (context = document) ->
+    for moduleName, Module of __modules when Module.INIT is 'load'
+      modulesAPI.init moduleName, Module, context
 
 jqueryPlugin = (moduleName) ->
-  $(el).data(moduleName) for el in @
+  _.compact( $(el).data(moduleName) for el in @ )
 
-$ -> modulesAPI.initAll document
 $(document).on 'html-inserted', (e) -> modulesAPI.initAll e.target
 
 window.module = buildModule

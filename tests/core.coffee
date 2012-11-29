@@ -31,7 +31,7 @@ test "Dom-modules: elements", ->
   console.log MyModule.ELEMENTS
 
   myDiv = $("""
-    <div style="display:none">
+    <div>
       <input type=button value=lick_me>
       <ul>
         <li>1</li> <li>2</li> <li>3</li>
@@ -51,6 +51,23 @@ test "Dom-modules: elements", ->
   a = myInstance.item().get()
   b = myDiv.find('li').get()
   deepEqual a, b, '@%dynamic_element_name%() accesor works'
+  myDiv.remove()
+
+  myDiv = $("<div></div>").appendTo 'body'
+  button = $("<input type=button value=lick_me>")
+  list = $("<ul><li>1</li> <li>2</li> <li>3</li></ul>")
+  myInstance = new MyModule myDiv
+  a = myInstance.typeButton.get()
+  b = []
+  deepEqual a, b, 'element accesor empty before element added'
+  myDiv.append(button).htmlInserted()
+  a = myInstance.typeButton.get()
+  b = button.get()
+  deepEqual a, b, 'element accesed after it was added'
+  list.appendTo(myDiv).htmlInserted()
+  a = myInstance.items.get()
+  b = list.get()
+  deepEqual a, b, 'element accesed after it was added #2'
   myDiv.remove()
 
 test "Dom-modules: global variables", ->
@@ -85,6 +102,31 @@ test "Dom-modules: settings", ->
 
   inst_3 = new MyModule myDiv, {foo: 'abc2'}
   deepEqual inst_3.settings, {foo: 'abc2'}, 'settings pased to constructor overvrites data-settings'
+
+test "Dom-modules: initialization (load)", ->
+
+  expect 3
+
+  html = """
+    <div class="my-module"></div>
+  """
+  elements = []
+  elements.push $(html).appendTo('body')
+
+  module (M) ->
+    M.root '.my-module'
+    M.init 'load'
+    M.methods
+      initializer: -> 
+        ok true
+
+  elements.push(el = $ html)
+  $('body').append(el).htmlInserted()
+
+  elements.push $(html).appendTo('body').htmlInserted()
+
+  $(el).remove() for el in elements
+
 
 
 

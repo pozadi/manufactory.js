@@ -11,3 +11,4 @@ test "action()", ->
 
   action 'foo#baz', ->
     ok false, "code don't run when it should not"
+    $('body').removeClass 'controller-foo action-bar'
