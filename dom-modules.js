@@ -24,11 +24,23 @@
 
     BaseModule.INIT = 'none';
 
+    BaseModule.EXPECTED_SETTINGS = [];
+
     function BaseModule(root, settings) {
-      var _this = this;
+      var data, option, _i, _len, _ref,
+        _this = this;
       this.root = root;
+      this.settings = $.extend({}, this.constructor.DEFAULT_SETTINGS);
+      data = this.root.data();
+      _ref = this.constructor.EXPECTED_SETTINGS;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        option = _ref[_i];
+        if (data[option] !== void 0) {
+          this.settings[option] = data[option];
+        }
+      }
+      $.extend(this.settings, settings);
       this.root.data(this.constructor.NAME, this);
-      this.settings = $.extend({}, this.constructor.DEFAULT_SETTINGS, settings);
       this.updateTree();
       this.root.on('html-inserted', function() {
         return _this.updateTree();
@@ -64,26 +76,26 @@
     BaseModule.prototype.on = function() {
       var args, eventName, _ref;
       eventName = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      return (_ref = this.root).on.apply(_ref, [this.constructor._fixEventName(eventName)].concat(__slice.call(args)));
+      return (_ref = this.root).on.apply(_ref, [this.constructor.fixEventName(eventName)].concat(__slice.call(args)));
     };
 
     BaseModule.prototype.off = function() {
       var args, eventName, _ref;
       eventName = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      return (_ref = this.root).off.apply(_ref, [this.constructor._fixEventName(eventName)].concat(__slice.call(args)));
+      return (_ref = this.root).off.apply(_ref, [this.constructor.fixEventName(eventName)].concat(__slice.call(args)));
     };
 
     BaseModule.prototype.fire = function() {
       var args, eventName, _ref;
       eventName = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-      return (_ref = this.root).trigger.apply(_ref, [this.constructor._fixEventName(eventName)].concat(__slice.call(args)));
+      return (_ref = this.root).trigger.apply(_ref, [this.constructor.fixEventName(eventName)].concat(__slice.call(args)));
     };
 
     BaseModule.prototype.setOption = function(name, value) {
       return this.settings[name] = value;
     };
 
-    BaseModule._fixEventName = function(name) {
+    BaseModule.fixEventName = function(name) {
       return "" + this.constructor.EVENT_PREFIX + "-" + name;
     };
 
@@ -119,6 +131,7 @@
       this._globalEvents = {};
       this._modulesEvents = {};
       this._defaultSettings = {};
+      this._expectedSettings = [];
       this._init = 'none';
     }
 
@@ -208,6 +221,7 @@
     ModuleInfo.prototype.expectSettings = function() {
       var expectedSettings;
       expectedSettings = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return this._expectedSettings = _.union(this._expectedSettings, _.flatten(expectedSettings));
     };
 
     ModuleInfo.prototype.dependsOn = function() {
@@ -228,11 +242,11 @@
   lastNameId = 0;
 
   genName = function() {
-    return "Anonimous" + (lastNameId++);
+    return "LambdaModule" + (lastNameId++);
   };
 
   buildModule = function(moduleName, builder) {
-    var element, info, lambdaModule, name, newModule, value, _ref, _ref1;
+    var currentScope, element, info, lambdaModule, name, newModule, part, parts, theName, value, _i, _len, _ref, _ref1;
     if (builder === void 0) {
       builder = moduleName;
       moduleName = genName();
@@ -252,10 +266,12 @@
 
     })(BaseModule);
     newModule.NAME = moduleName;
+    newModule.LAMBDA = !!lambdaModule;
     newModule.DEFAULT_SETTINGS = info._defaultSettings;
     newModule.EVENT_PREFIX = info._eventPrefix || moduleName;
     newModule.ROOT_SELECTOR = info._rootSelector;
     newModule.ELEMENTS = info._elements;
+    newModule.EXPECTED_SETTINGS = info._expectedSettings;
     _ref = info._methods;
     for (name in _ref) {
       value = _ref[name];
@@ -276,7 +292,17 @@
     }
     modules[moduleName] = newModule;
     if (!lambdaModule) {
-      window[moduleName] = module;
+      parts = moduleName.split('.');
+      currentScope = window;
+      theName = parts.pop();
+      for (_i = 0, _len = parts.length; _i < _len; _i++) {
+        part = parts[_i];
+        if (currentScope[part] === void 0) {
+          currentScope[part] = {};
+        }
+        currentScope = currentScope[part];
+      }
+      currentScope[theName] = newModule;
     }
     return newModule;
   };
@@ -286,7 +312,7 @@
       return moduleInstances[moduleName] || [];
     },
     on: function(moduleName, eventName, callback) {
-      return $(document).on(modules[moduleName]._fixEventName(eventName), function(e) {
+      return $(document).on(modules[moduleName].fixEventName(eventName), function(e) {
         var moduleInstance;
         moduleInstance = $(e.target).modules(moduleName)[0];
         if (moduleInstance) {
@@ -296,7 +322,7 @@
       });
     },
     initAll: function(context) {
-      var $el, Module, el, name, settings, _i, _len, _results;
+      var Module, el, name, _i, _len, _results;
       _results = [];
       for (Module = _i = 0, _len = modules.length; _i < _len; Module = ++_i) {
         name = modules[Module];
@@ -307,9 +333,7 @@
             _results1 = [];
             for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
               el = _ref[_j];
-              $el = $(el);
-              settings = $el.data();
-              _results1.push(new Module($el, settings));
+              _results1.push(new Module($(el)));
             }
             return _results1;
           })());

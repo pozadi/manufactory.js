@@ -9,10 +9,16 @@ class BaseModule
   @ROOT_SELECTOR: null
   @ELEMENTS: {}
   @INIT: 'none'
+  @EXPECTED_SETTINGS: []
 
   constructor: (@root, settings) ->
+    @settings = $.extend {}, @constructor.DEFAULT_SETTINGS
+    data = @root.data()
+    for option in @constructor.EXPECTED_SETTINGS
+      if data[option] != undefined
+        @settings[option] = data[option]
+    $.extend @settings, settings
     @root.data @constructor.NAME, @
-    @settings = $.extend {}, @constructor.DEFAULT_SETTINGS, settings
     @updateTree()
     @root.on 'html-inserted', => @updateTree()
     if moduleInstances[@constructor.NAME] is undefined
@@ -28,18 +34,18 @@ class BaseModule
     @root.find args...
 
   on: (eventName, args...) ->
-    @root.on @constructor._fixEventName(eventName), args...
+    @root.on @constructor.fixEventName(eventName), args...
 
   off: (eventName, args...) ->
-    @root.off @constructor._fixEventName(eventName), args...
+    @root.off @constructor.fixEventName(eventName), args...
   
   fire: (eventName, args...) ->
-    @root.trigger @constructor._fixEventName(eventName), args...
+    @root.trigger @constructor.fixEventName(eventName), args...
 
   setOption: (name, value) ->
     @settings[name] = value
 
-  @_fixEventName: (name) ->
+  @fixEventName: (name) ->
     "#{@constructor.EVENT_PREFIX}-#{name}"
 
 
@@ -62,6 +68,7 @@ class ModuleInfo
     @_globalEvents = {}
     @_modulesEvents = {}
     @_defaultSettings = {}
+    @_expectedSettings = []
     @_init = 'none'
 
   # Set all module events
@@ -137,7 +144,7 @@ class ModuleInfo
     $.extend @_defaultSettings, newDefaultSettings
 
   expectSettings: (expectedSettings...) ->
-    
+    @_expectedSettings = _.union @_expectedSettings, _.flatten expectedSettings
 
   # 
   dependsOn: (moduleNames...) ->
@@ -155,7 +162,7 @@ class ModuleInfo
 
 lastNameId = 0
 genName = -> 
-  "Anonimous#{lastNameId++}"
+  "LambdaModule#{lastNameId++}"
 
 buildModule = (moduleName, builder) ->
 
@@ -170,10 +177,12 @@ buildModule = (moduleName, builder) ->
   newModule = class extends BaseModule
 
   newModule.NAME = moduleName
+  newModule.LAMBDA = !!lambdaModule
   newModule.DEFAULT_SETTINGS = info._defaultSettings
   newModule.EVENT_PREFIX = info._eventPrefix or moduleName
   newModule.ROOT_SELECTOR = info._rootSelector
   newModule.ELEMENTS = info._elements
+  newModule.EXPECTED_SETTINGS = info._expectedSettings
 
   for name, value of info._methods
     newModule::[name] = value
@@ -191,8 +200,14 @@ buildModule = (moduleName, builder) ->
   modules[moduleName] = newModule
 
   unless lambdaModule
-    # TODO: handle complex name
-    window[moduleName] = module
+    parts = moduleName.split '.'
+    currentScope = window
+    theName = parts.pop()
+    for part in parts
+      if currentScope[part] is undefined
+        currentScope[part] = {}
+      currentScope = currentScope[part]
+    currentScope[theName] = newModule
 
   return newModule
   
@@ -202,19 +217,16 @@ modulesAPI =
     moduleInstances[moduleName] or []
 
   on: (moduleName, eventName, callback) ->
-    $(document).on modules[moduleName]._fixEventName(eventName), (e) ->
+    $(document).on modules[moduleName].fixEventName(eventName), (e) ->
       moduleInstance = $(e.target).modules(moduleName)[0]
       callback moduleInstance if moduleInstance
       true
 
   initAll: (context) ->
     for name, Module in modules when Module.ROOT_SELECTOR != null and Module.INIT is 'load'
+      # FIXME: what if context is module root itself
       for el in $ Module.ROOT_SELECTOR, context
-        $el = $ el
-        # FIXME: dirty settings
-        settings = $el.data()
-        new Module $el, settings
-
+        new Module($ el)
 
 jqueryPlugin = (moduleName) ->
   $(el).data(moduleName) for el in @
