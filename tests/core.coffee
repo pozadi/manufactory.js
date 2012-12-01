@@ -127,6 +127,159 @@ test "Dom-modules: initialization (load)", ->
 
   $(el).remove() for el in elements
 
+test "Dom-modules: DOM-events (regular)", ->
+
+  expect 10
+
+  module (M) ->
+    M.init 'load'
+    M.tree """
+      .my-module1
+        [type=button]
+        a
+    """
+    M.events """
+      lick typeButton  buttonLicked
+      lick  typeButton extraHandler
+      kick typeButton onKick
+
+      kick a  onKick   
+      kick a onKickA
+    """
+    M.event 'lick', 'typeButton', (element, event, eventData) ->
+      equal (typeof @buttonLicked), 'function', '(inline) `this` in handler is module instance'
+      equal element, @typeButton[0], '(inline) `element` in handler is event target'
+      equal eventData, 'abc', '(inline) `eventData` in handler ...'
+    M.methods
+      buttonLicked: (element, event, eventData) ->
+        equal (typeof @buttonLicked), 'function', '`this` in handler is module instance'
+        equal element, @typeButton[0], '`element` in handler is event target'
+        equal eventData, 'abc', '`eventData` in handler ...'
+      extraHandler: ->
+        ok true, "multiple handlers on same event"
+      onKick: ->
+        ok true, """
+          Different event on same element,
+          and one handler on multiple events.
+          Should be called twice.
+        """
+      onKickA: ->
+        ok true, 'another one'
+  myDiv = $ """
+    <div class=my-module1>
+      <input type=button value=lick_me>
+      <a href=#>kick me</a>
+    </div>
+  """
+  myDiv.appendTo('body').htmlInserted()
+  myDiv.find('input')
+    .trigger('lick', 'abc')
+    .trigger('kick')
+    .end().find('a')
+    .trigger('kick')
+    .end().remove()
+
+test "Dom-modules: DOM-events (lazy)", ->
+
+  expect 10
+
+  module (M) ->
+    M.init 'lazy'
+    M.tree """
+      .my-module3
+        [type=button]
+        a
+    """
+    M.events """
+      lick typeButton  buttonLicked
+      lick  typeButton extraHandler
+      kick typeButton onKick
+
+      kick a  onKick   
+      kick a onKickA
+    """
+    M.event 'lick', 'typeButton', (element, event, eventData) ->
+      equal (typeof @buttonLicked), 'function', '(inline) `this` in handler is module instance'
+      equal element, @typeButton[0], '(inline) `element` in handler is event target'
+      equal eventData, 'abc', '(inline) `eventData` in handler ...'
+    M.methods
+      buttonLicked: (element, event, eventData) ->
+        equal (typeof @buttonLicked), 'function', '`this` in handler is module instance'
+        equal element, @typeButton[0], '`element` in handler is event target'
+        equal eventData, 'abc', '`eventData` in handler ...'
+      extraHandler: ->
+        ok true, "multiple handlers on same event"
+      onKick: ->
+        ok true, """
+          Different event on same element,
+          and one handler on multiple events.
+          Should be called twice.
+        """
+      onKickA: ->
+        ok true, 'another one'
+  myDiv = $ """
+    <div class=my-module3>
+      <input type=button value=lick_me>
+      <a href=#>kick me</a>
+    </div>
+  """
+  myDiv.appendTo('body')
+  myDiv.find('input')
+    .trigger('lick', 'abc')
+    .trigger('kick')
+    .end().find('a')
+    .trigger('kick')
+    .end().remove()
+
+test "Dom-modules: jquery-plugin (regular)", ->
+
+  myDiv = $("""
+    <div>
+      <div class=my-module2 data-a=1></div>
+      <div class=my-module2 data-a=2></div>
+      <div class=my-module2 data-a=3></div>
+    </div>
+  """).appendTo 'body'
+  
+  module 'Module1', (M) ->
+    M.init 'load'
+    M.root '.my-module2'
+    M.methods
+      foo: -> 'bar'
+      getA: -> @root.data 'a'
+
+  for instance in myDiv.find('div').modules 'Module1'
+    equal instance.foo(), 'bar', '.modules()'
+
+  for el in myDiv.find('div')
+    equal $(el).data('a'), $(el).module('Module1').getA(), '.module()'
+
+  myDiv.remove()
+
+test "Dom-modules: jquery-plugin (lazy)", ->
+
+  myDiv = $("""
+    <div>
+      <div class=my-module2 data-a=1></div>
+      <div class=my-module2 data-a=2></div>
+      <div class=my-module2 data-a=3></div>
+    </div>
+  """).appendTo 'body'
+  
+  module 'Module1', (M) ->
+    M.init 'lazy'
+    M.root '.my-module2'
+    M.methods
+      foo: -> 'bar'
+      getA: -> @root.data 'a'
+
+  for instance in myDiv.find('div').modules 'Module1'
+    equal instance.foo(), 'bar', '.modules()'
+
+  for el in myDiv.find('div')
+    equal $(el).data('a'), $(el).module('Module1').getA(), '.module()'
+
+  myDiv.remove()
 
 
 

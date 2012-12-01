@@ -19,6 +19,7 @@ class BaseModule
         @settings[option] = data[option]
     $.extend @settings, settings
     @root.data @constructor.NAME, @
+    @_bind() unless @constructor.INIT is 'lazy'
     @updateTree()
     @root.on 'html-inserted', => @updateTree()
     if __moduleInstances[@constructor.NAME] is undefined
@@ -29,6 +30,32 @@ class BaseModule
   updateTree: ->
     for name, element of @constructor.ELEMENTS when not element.dynamic
       @[name] = @find element.selector
+
+  _bind: ->
+    moduleInstance = @
+    for eventMeta in @constructor.EVENTS
+      {handler, eventName, elementName} = eventMeta
+      selector = @constructor.ELEMENTS[elementName].selector
+      if typeof handler is 'string'
+        handler = @[handler]
+      do (eventName, selector, handler) =>
+        @root.on eventName, selector, (args...) ->
+          args.unshift @
+          handler.apply moduleInstance, args
+
+  @_bind: ->
+    moduleClass = @
+    for eventMeta in @EVENTS
+      {handler, eventName, elementName} = eventMeta
+      selector = @ELEMENTS[elementName].selector
+      if typeof handler is 'string'
+        handler = @::[handler]
+      do (eventName, selector, handler) =>
+        $(document).on eventName, "#{@ROOT_SELECTOR} #{selector}", (args...) ->
+          rootElement = $(@).parents(moduleClass.ROOT_SELECTOR)
+          moduleInstance = rootElement.module moduleClass.NAME
+          args.unshift @
+          handler.apply moduleInstance, args
 
   find: (args...) ->
     @root.find args...
@@ -51,20 +78,10 @@ class BaseModule
 
 class ModuleInfo
 
-  _methods: null
-  _rootSelector: null
-  _elements: null
-  _events: null
-  _globalEvents: null
-  _modulesEvents: null
-  _init: null
-  _defaultSettings: null
-  _eventPrefix: null
-
-  constructor: (@name) ->
+  constructor: (@_name) ->
     @_methods = {}
     @_elements = {}
-    @_events = {}
+    @_events = []
     @_globalEvents = {}
     @_modulesEvents = {}
     @_defaultSettings = {}
@@ -127,9 +144,15 @@ class ModuleInfo
         options = []
       @element selector, name, 'dynamic' in options
 
+  event: (eventName, elementName, handler) ->
+    @_events.push {elementName, eventName, handler}
+
   # Set all DOM events module wants to handle
   events: (eventsString) ->
-    # TODO
+    lines = _(eventsString.split '\n').map($.trim).filter (l) -> l != ''
+    for line in lines
+      [eventName, elementName, handlerName] = _(line.split /\s+/).map($.trim)
+      @event eventName, elementName, handlerName
     
   # Set all modules events module wants to handle 
   modulesEvents: (modulesEventsString) ->
@@ -180,6 +203,7 @@ buildModule = (moduleName, builder) ->
   newModule.LAMBDA = !!lambdaModule
   newModule.DEFAULT_SETTINGS = info._defaultSettings
   newModule.EVENT_PREFIX = info._eventPrefix or moduleName
+  newModule.EVENTS = info._events
   newModule.ROOT_SELECTOR = info._rootSelector
   newModule.ELEMENTS = info._elements
   newModule.EXPECTED_SETTINGS = info._expectedSettings
@@ -196,8 +220,6 @@ buildModule = (moduleName, builder) ->
     else
       newModule::[name] = $()
 
-  #TODO: events
-
   __modules[moduleName] = newModule
 
   unless lambdaModule
@@ -213,6 +235,9 @@ buildModule = (moduleName, builder) ->
   if newModule.INIT is 'load'
     $ ->
       modulesAPI.init newModule.NAME
+
+  if newModule.INIT is 'lazy'
+    newModule._bind()
 
   return newModule
   
@@ -239,12 +264,21 @@ modulesAPI =
     for moduleName, Module of __modules when Module.INIT is 'load'
       modulesAPI.init moduleName, Module, context
 
-jqueryPlugin = (moduleName) ->
-  _.compact( $(el).data(moduleName) for el in @ )
+jqueryPlugins =
+  modules: (moduleName) ->
+    _.compact( $(el).module(moduleName) for el in @ )
+  module: (moduleName) ->
+    instance = @first().data(moduleName)
+    unless instance
+      ModuleClass = __modules[moduleName]
+      if ModuleClass.INIT == 'lazy'
+        instance = new ModuleClass @first()
+    instance
 
 $(document).on 'html-inserted', (e) -> modulesAPI.initAll e.target
 
 window.module = buildModule
 window.modules = modulesAPI
-jQuery::modules = jqueryPlugin
+jQuery::modules = jqueryPlugins.modules
+jQuery::module = jqueryPlugins.module
 
