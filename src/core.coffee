@@ -1,15 +1,14 @@
 __modules = {}
 __moduleInstances = {}
 
-class BaseModule
+LAZY = 'lazy'
+LOAD = 'load'
+NONE = 'none'
+DYNAMIC = 'dynamic'
+HTML_INSERTED = 'html-inserted'
+LAMBDA_MODULE = 'LambdaModule'
 
-  @NAME: 'BaseModule' 
-  @EVENT_PREFIX: 'base-module'
-  @DEFAULT_SETTINGS: {} 
-  @ROOT_SELECTOR: null
-  @ELEMENTS: {}
-  @INIT: 'none'
-  @EXPECTED_SETTINGS: []
+class BaseModule
 
   constructor: (@root, settings) ->
     @settings = $.extend {}, @constructor.DEFAULT_SETTINGS
@@ -19,9 +18,9 @@ class BaseModule
         @settings[option] = data[option]
     $.extend @settings, settings
     @root.data @constructor.NAME, @
-    @_bind() unless @constructor.INIT is 'lazy'
+    @_bind() unless @constructor.INIT is LAZY
     @updateTree()
-    @root.on 'html-inserted', => @updateTree()
+    @root.on HTML_INSERTED, => @updateTree()
     if __moduleInstances[@constructor.NAME] is undefined
       __moduleInstances[@constructor.NAME] = []
     __moduleInstances[@constructor.NAME].push @
@@ -31,31 +30,56 @@ class BaseModule
     for name, element of @constructor.ELEMENTS when not element.dynamic
       @[name] = @find element.selector
 
+  _fixHandler: (handler) ->
+    if typeof handler is 'string'
+      handler = @[handler]
+    _.bind handler, @
+
+  _fixHandler2: (handler) ->
+    handler = @_fixHandler handler
+    (args...) ->
+      args.unshift @
+      handler args...
+
+  @_fixHandler2: (handler) ->
+    moduleClass = @
+    (args...) ->
+      rootElement = $(@).parents moduleClass.ROOT_SELECTOR
+      moduleInstance = rootElement.module moduleClass.NAME
+      handler = moduleInstance._fixHandler2 handler
+      handler.apply @, args
+
+  @_fixHandler2alt: (handler) ->
+    moduleClass = @
+    (args...) ->
+      for rootElement in $ moduleClass.ROOT_SELECTOR
+        moduleInstance = $(rootElement).module moduleClass.NAME
+        _handler = moduleInstance._fixHandler2 handler
+        _handler.apply @, args
+
+  @_nameToSelector: (name) ->
+    @ELEMENTS[name].selector
+
   _bind: ->
-    moduleInstance = @
     for eventMeta in @constructor.EVENTS
       {handler, eventName, elementName} = eventMeta
-      selector = @constructor.ELEMENTS[elementName].selector
-      if typeof handler is 'string'
-        handler = @[handler]
-      do (eventName, selector, handler) =>
-        @root.on eventName, selector, (args...) ->
-          args.unshift @
-          handler.apply moduleInstance, args
+      selector = @constructor._nameToSelector elementName
+      @root.on eventName, selector, @_fixHandler2 handler
+    for eventMeta in @constructor.GLOBAL_EVENTS
+      {eventName, selector, handler} = eventMeta
+      $(document).on eventName, selector, @_fixHandler2 handler
 
   @_bind: ->
-    moduleClass = @
     for eventMeta in @EVENTS
       {handler, eventName, elementName} = eventMeta
-      selector = @ELEMENTS[elementName].selector
-      if typeof handler is 'string'
-        handler = @::[handler]
+      selector = @_nameToSelector elementName
+      selector = "#{@ROOT_SELECTOR} #{selector}"
       do (eventName, selector, handler) =>
-        $(document).on eventName, "#{@ROOT_SELECTOR} #{selector}", (args...) ->
-          rootElement = $(@).parents(moduleClass.ROOT_SELECTOR)
-          moduleInstance = rootElement.module moduleClass.NAME
-          args.unshift @
-          handler.apply moduleInstance, args
+        $(document).on eventName, selector, @_fixHandler2 handler
+    for eventMeta in @GLOBAL_EVENTS
+      {eventName, selector, handler} = eventMeta
+      $(document).on eventName, selector, @_fixHandler2alt handler
+
 
   find: (args...) ->
     @root.find args...
@@ -82,7 +106,7 @@ class ModuleInfo
     @_methods = {}
     @_elements = {}
     @_events = []
-    @_globalEvents = {}
+    @_globalEvents = []
     @_modulesEvents = {}
     @_defaultSettings = {}
     @_expectedSettings = []
@@ -142,7 +166,7 @@ class ModuleInfo
       else
         name = null
         options = []
-      @element selector, name, 'dynamic' in options
+      @element selector, name, DYNAMIC in options
 
   event: (eventName, elementName, handler) ->
     @_events.push {elementName, eventName, handler}
@@ -157,6 +181,9 @@ class ModuleInfo
   # Set all modules events module wants to handle 
   modulesEvents: (modulesEventsString) ->
     # TODO
+
+  globalEvent: (eventName, selector, handler) ->
+    @_globalEvents.push {eventName, selector, handler}
 
   # Set all global DOM events module wants to handle
   globalEvents: (globalEventsString) ->
@@ -185,7 +212,7 @@ class ModuleInfo
 
 lastNameId = 0
 genName = -> 
-  "LambdaModule#{lastNameId++}"
+  "#{LAMBDA_MODULE}#{lastNameId++}"
 
 buildModule = (moduleName, builder) ->
 
@@ -204,6 +231,7 @@ buildModule = (moduleName, builder) ->
   newModule.DEFAULT_SETTINGS = info._defaultSettings
   newModule.EVENT_PREFIX = info._eventPrefix or moduleName
   newModule.EVENTS = info._events
+  newModule.GLOBAL_EVENTS = info._globalEvents
   newModule.ROOT_SELECTOR = info._rootSelector
   newModule.ELEMENTS = info._elements
   newModule.EXPECTED_SETTINGS = info._expectedSettings
@@ -232,11 +260,11 @@ buildModule = (moduleName, builder) ->
       currentScope = currentScope[part]
     currentScope[theName] = newModule
 
-  if newModule.INIT is 'load'
+  if newModule.INIT is LOAD
     $ ->
       modulesAPI.init newModule.NAME
 
-  if newModule.INIT is 'lazy'
+  if newModule.INIT is LAZY
     newModule._bind()
 
   return newModule
@@ -261,7 +289,7 @@ modulesAPI =
           new Module($ el)
 
   initAll: (context = document) ->
-    for moduleName, Module of __modules when Module.INIT is 'load'
+    for moduleName, Module of __modules when Module.INIT is LOAD
       modulesAPI.init moduleName, Module, context
 
 jqueryPlugins =
@@ -271,11 +299,11 @@ jqueryPlugins =
     instance = @first().data(moduleName)
     unless instance
       ModuleClass = __modules[moduleName]
-      if ModuleClass.INIT == 'lazy'
+      if ModuleClass.INIT is LAZY
         instance = new ModuleClass @first()
     instance
 
-$(document).on 'html-inserted', (e) -> modulesAPI.initAll e.target
+$(document).on HTML_INSERTED, (e) -> modulesAPI.initAll e.target
 
 window.module = buildModule
 window.modules = modulesAPI

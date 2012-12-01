@@ -127,7 +127,7 @@ test "Dom-modules: initialization (load)", ->
 
   $(el).remove() for el in elements
 
-test "Dom-modules: DOM-events (regular)", ->
+test "Dom-modules: DOM events (regular)", ->
 
   expect 10
 
@@ -179,7 +179,7 @@ test "Dom-modules: DOM-events (regular)", ->
     .trigger('kick')
     .end().remove()
 
-test "Dom-modules: DOM-events (lazy)", ->
+test "Dom-modules: DOM events (lazy)", ->
 
   expect 10
 
@@ -230,6 +230,57 @@ test "Dom-modules: DOM-events (lazy)", ->
     .end().find('a')
     .trigger('kick')
     .end().remove()
+
+test "Dom-modules: global DOM events (regular)", ->
+
+  expect 12
+
+  myDiv = $("""
+    <div>
+      <div class=my-module4 data-a=1></div>
+      <div class=my-module4 data-a=2></div>
+    </div>
+  """).appendTo 'body'
+  module (M) ->
+    M.init 'load'
+    M.root '.my-module4'
+    M.globalEvent 'lick', 'body', (element, event, eventData) ->
+      equal (typeof @onLickBody), 'function', '`this` in handler is module instance'
+      equal element, $('body')[0], '`element` in handler is event target'
+      equal eventData, 'abc', '`eventData` in handler ...'
+    M.globalEvent 'lick', 'body', 'onLickBody'
+    M.methods 
+      onLickBody: (element, event, eventData) ->
+        equal (typeof @onLickBody), 'function', '`this` in handler is module instance'
+        equal element, $('body')[0], '`element` in handler is event target'
+        equal eventData, 'abc', '`eventData` in handler ...'
+  $('body').trigger 'lick', 'abc'
+
+test "Dom-modules: global DOM events (lazy)", ->
+
+  expect 12
+  
+  module (M) ->
+    M.init 'lazy'
+    M.root '.my-module5'
+    M.globalEvent 'lick1', 'body', (element, event, eventData) ->
+      debugger
+      equal (typeof @onLickBody), 'function', '`this` in handler is module instance'
+      equal element, $('body')[0], '`element` in handler is event target'
+      equal eventData, 'abc', '`eventData` in handler ...'
+    M.globalEvent 'lick1', 'body', 'onLickBody'
+    M.methods 
+      onLickBody: (element, event, eventData) ->
+        equal (typeof @onLickBody), 'function', '`this` in handler is module instance'
+        equal element, $('body')[0], '`element` in handler is event target'
+        equal eventData, 'abc', '`eventData` in handler ...'
+  myDiv = $("""
+    <div>
+      <div class=my-module5 data-a=1></div>
+      <div class=my-module5 data-a=2></div>
+    </div>
+  """).appendTo 'body'
+  $('body').trigger 'lick1', 'abc'
 
 test "Dom-modules: jquery-plugin (regular)", ->
 
