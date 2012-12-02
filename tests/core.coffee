@@ -255,6 +255,7 @@ test "Dom-modules: global DOM events (regular)", ->
         equal element, $('body')[0], '`element` in handler is event target'
         equal eventData, 'abc', '`eventData` in handler ...'
   $('body').trigger 'lick', 'abc'
+  myDiv.remove()
 
 test "Dom-modules: global DOM events (lazy)", ->
 
@@ -281,6 +282,7 @@ test "Dom-modules: global DOM events (lazy)", ->
     </div>
   """).appendTo 'body'
   $('body').trigger 'lick1', 'abc'
+  myDiv.remove()
 
 test "Dom-modules: jquery-plugin (regular)", ->
 
