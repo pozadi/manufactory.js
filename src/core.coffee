@@ -6,12 +6,12 @@ __moduleEvents = {
     globalHandlers = @_globalHandlers[moduleInstance.constructor.NAME]?[eventName] or []
     localHandlers = moduleInstance._eventHandlers?[eventName] or []
     for handler in _.union localHandlers, globalHandlers
-      handler.call moduleInstance, moduleInstance, data, eventName
-  bindGlobal: (moduleName, eventName, handler) ->
+      handler.call moduleInstance, data, eventName
+  bindGlobal: (eventName, moduleName, handler) ->
     @_globalHandlers[moduleName] or= {}
     @_globalHandlers[moduleName][eventName] or= []
     @_globalHandlers[moduleName][eventName].push handler
-  unbindGlobal: (moduleName, eventName, handler) ->
+  unbindGlobal: (eventName, moduleName, handler) ->
     return unless @_globalHandlers[moduleName]?[eventName]
     handlers = _.without @_globalHandlers[moduleName][eventName], handler
     @_globalHandlers[moduleName][eventName] = handlers
@@ -89,6 +89,9 @@ class BaseModule
     for eventMeta in @constructor.GLOBAL_EVENTS
       {eventName, selector, handler} = eventMeta
       $(document).on eventName, selector, @_fixHandler handler
+    for eventMeta in @constructor.MODULE_EVENTS
+      {eventName, moduleName, handler} = eventMeta
+      __moduleEvents.bindGlobal eventName, moduleName, @_fixHandler handler
 
   @_bind: ->
     for eventMeta in @EVENTS
@@ -124,7 +127,7 @@ class ModuleInfo
     @_elements = {}
     @_events = []
     @_globalEvents = []
-    @_modulesEvents = {}
+    @_moduleEvents = []
     @_defaultSettings = {}
     @_expectedSettings = []
     @_init = 'none'
@@ -195,9 +198,15 @@ class ModuleInfo
       [eventName, elementName, handlerName] = _(line.split /\s+/).map($.trim)
       @event eventName, elementName, handlerName
     
+  moduleEvent: (eventName, moduleName, handler) ->
+    @_moduleEvents.push {eventName, moduleName, handler}
+
   # Set all modules events module wants to handle 
-  modulesEvents: (modulesEventsString) ->
-    # TODO
+  moduleEvents: (moduleEventsString) ->
+    lines = _(moduleEventsString.split '\n').map($.trim).filter (l) -> l != ''
+    for line in lines
+      [eventName, moduleName, handlerName] = _(line.split /\s+/).map($.trim)
+      @moduleEvent eventName, moduleName, handlerName
 
   globalEvent: (eventName, selector, handler) ->
     @_globalEvents.push {eventName, selector, handler}
@@ -237,6 +246,7 @@ buildModule = (moduleName, builder) ->
   newModule.LAMBDA = !!lambdaModule
   newModule.DEFAULT_SETTINGS = info._defaultSettings
   newModule.EVENTS = info._events
+  newModule.MODULE_EVENTS = info._moduleEvents
   newModule.GLOBAL_EVENTS = info._globalEvents
   newModule.ROOT_SELECTOR = info._rootSelector
   newModule.ELEMENTS = info._elements
@@ -279,11 +289,11 @@ modulesAPI =
   find: (moduleName) ->
     __moduleInstances[moduleName] or []
 
-  on: (moduleName, eventName, callback) ->
-    __moduleEvents.bindGlobal moduleName, eventName, callback
+  on: (eventName, moduleName, callback) ->
+    __moduleEvents.bindGlobal eventName, moduleName, callback
 
-  off:  (moduleName, eventName, callback) ->
-    __moduleEvents.unbindGlobal moduleName, eventName, callback
+  off:  (eventName, moduleName, callback) ->
+    __moduleEvents.unbindGlobal eventName, moduleName, callback
 
   init: (moduleName, Module = __modules[moduleName], context = document) ->
     if Module

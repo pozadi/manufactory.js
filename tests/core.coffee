@@ -336,15 +336,16 @@ test "Dom-modules: jquery-plugin (lazy)", ->
 
 test "Dom-modules: module events (local)", ->
 
-  expect 2
+  expect 3
 
   MyModule = module (M) ->
 
-  myInstance = new MyModule $('body')
+  myInstance = new MyModule $('<div></div>')
 
-  handler = (instance, data) ->
+  handler = (data, eventName) ->
     equal data, 'abc'
-    equal instance, myInstance
+    equal @, myInstance
+    equal eventName, 'event-1'
 
   myInstance.on 'event-1', handler
 
@@ -358,26 +359,75 @@ test "Dom-modules: module events (local)", ->
 
 test "Dom-modules: module events (global)", ->
 
-  expect 2
+  expect 3
 
   module 'SuperModule', (M) ->
 
-  myInstance = new SuperModule $('body')
+  myInstance = new SuperModule $('<div></div>')
 
-  handler = (instance, data) ->
+  handler = (data, eventName) ->
     equal data, 'abc'
-    equal instance, myInstance
+    equal @, myInstance
+    equal eventName, 'event-1'
 
-  modules.on 'SuperModule', 'event-1', handler
+  modules.on 'event-1', 'SuperModule', handler
 
   myInstance.fire 'event-1', 'abc'
   myInstance.fire 'not-listened-event'
 
-  modules.off 'SuperModule', 'event-1', handler
+  modules.off 'event-1', 'SuperModule',  handler
 
   myInstance.fire 'event-1', 'abc'
 
 
 test "Dom-modules: module events (syntax sugar)", ->
 
-  ok 'todo'
+  expect 28
+
+  currentAInstance = null
+
+  module 'ModuleA', (M) ->
+
+    M.methods
+      initializer: ->
+        @fire 'born', 'abc'
+      die: ->
+        @fire 'die', 'cba'
+
+  module 'ModuleB', (M) ->
+
+    M.moduleEvents """
+      born ModuleA onItBorn
+
+      die  ModuleA onItDie
+    """
+
+    M.methods
+      onItDie: (aInstance, data, eventName) ->
+        equal aInstance, currentAInstance
+        equal data, 'cba'
+        equal eventName, 'die'
+        equal @constructor.NAME, 'ModuleB'
+      onItBorn: (aInstance, data, eventName) ->
+        equal data, 'abc'
+        equal eventName, 'born'
+        equal @constructor.NAME, 'ModuleB'
+
+  moduleB1 = new ModuleB $('<div></div>')
+  moduleB2 = new ModuleB $('<div></div>')
+
+  moduleA1 = new ModuleA $('<div></div>')
+  moduleA2 = new ModuleA $('<div></div>')
+
+  currentAInstance = moduleA1
+  moduleA1.die()
+
+  currentAInstance = moduleA2
+  moduleA2.die()
+
+
+
+
+
+
+

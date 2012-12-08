@@ -20,17 +20,17 @@
       _results = [];
       for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
         handler = _ref2[_i];
-        _results.push(handler.call(moduleInstance, moduleInstance, data, eventName));
+        _results.push(handler.call(moduleInstance, data, eventName));
       }
       return _results;
     },
-    bindGlobal: function(moduleName, eventName, handler) {
+    bindGlobal: function(eventName, moduleName, handler) {
       var _base, _base1;
       (_base = this._globalHandlers)[moduleName] || (_base[moduleName] = {});
       (_base1 = this._globalHandlers[moduleName])[eventName] || (_base1[eventName] = []);
       return this._globalHandlers[moduleName][eventName].push(handler);
     },
-    unbindGlobal: function(moduleName, eventName, handler) {
+    unbindGlobal: function(eventName, moduleName, handler) {
       var handlers, _ref;
       if (!((_ref = this._globalHandlers[moduleName]) != null ? _ref[eventName] : void 0)) {
         return;
@@ -161,7 +161,7 @@
     };
 
     BaseModule.prototype._bind = function() {
-      var elementName, eventMeta, eventName, handler, selector, _i, _j, _len, _len1, _ref, _ref1, _results;
+      var elementName, eventMeta, eventName, handler, moduleName, selector, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
       _ref = this.constructor.EVENTS;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         eventMeta = _ref[_i];
@@ -170,11 +170,17 @@
         this.root.on(eventName, selector, this._fixHandler(handler));
       }
       _ref1 = this.constructor.GLOBAL_EVENTS;
-      _results = [];
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         eventMeta = _ref1[_j];
         eventName = eventMeta.eventName, selector = eventMeta.selector, handler = eventMeta.handler;
-        _results.push($(document).on(eventName, selector, this._fixHandler(handler)));
+        $(document).on(eventName, selector, this._fixHandler(handler));
+      }
+      _ref2 = this.constructor.MODULE_EVENTS;
+      _results = [];
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        eventMeta = _ref2[_k];
+        eventName = eventMeta.eventName, moduleName = eventMeta.moduleName, handler = eventMeta.handler;
+        _results.push(__moduleEvents.bindGlobal(eventName, moduleName, this._fixHandler(handler)));
       }
       return _results;
     };
@@ -236,7 +242,7 @@
       this._elements = {};
       this._events = [];
       this._globalEvents = [];
-      this._modulesEvents = {};
+      this._moduleEvents = [];
       this._defaultSettings = {};
       this._expectedSettings = [];
       this._init = 'none';
@@ -337,7 +343,27 @@
       return _results;
     };
 
-    ModuleInfo.prototype.modulesEvents = function(modulesEventsString) {};
+    ModuleInfo.prototype.moduleEvent = function(eventName, moduleName, handler) {
+      return this._moduleEvents.push({
+        eventName: eventName,
+        moduleName: moduleName,
+        handler: handler
+      });
+    };
+
+    ModuleInfo.prototype.moduleEvents = function(moduleEventsString) {
+      var eventName, handlerName, line, lines, moduleName, _i, _len, _ref, _results;
+      lines = _(moduleEventsString.split('\n')).map($.trim).filter(function(l) {
+        return l !== '';
+      });
+      _results = [];
+      for (_i = 0, _len = lines.length; _i < _len; _i++) {
+        line = lines[_i];
+        _ref = _(line.split(/\s+/)).map($.trim), eventName = _ref[0], moduleName = _ref[1], handlerName = _ref[2];
+        _results.push(this.moduleEvent(eventName, moduleName, handlerName));
+      }
+      return _results;
+    };
 
     ModuleInfo.prototype.globalEvent = function(eventName, selector, handler) {
       return this._globalEvents.push({
@@ -395,6 +421,7 @@
     newModule.LAMBDA = !!lambdaModule;
     newModule.DEFAULT_SETTINGS = info._defaultSettings;
     newModule.EVENTS = info._events;
+    newModule.MODULE_EVENTS = info._moduleEvents;
     newModule.GLOBAL_EVENTS = info._globalEvents;
     newModule.ROOT_SELECTOR = info._rootSelector;
     newModule.ELEMENTS = info._elements;
@@ -443,11 +470,11 @@
     find: function(moduleName) {
       return __moduleInstances[moduleName] || [];
     },
-    on: function(moduleName, eventName, callback) {
-      return __moduleEvents.bindGlobal(moduleName, eventName, callback);
+    on: function(eventName, moduleName, callback) {
+      return __moduleEvents.bindGlobal(eventName, moduleName, callback);
     },
-    off: function(moduleName, eventName, callback) {
-      return __moduleEvents.unbindGlobal(moduleName, eventName, callback);
+    off: function(eventName, moduleName, callback) {
+      return __moduleEvents.unbindGlobal(eventName, moduleName, callback);
     },
     init: function(moduleName, Module, context) {
       var el, elements, _i, _len, _results;
