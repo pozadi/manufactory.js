@@ -115,7 +115,6 @@ test "Dom-modules: initialization (load)", ->
 
   module (M) ->
     M.root '.my-module'
-    M.init 'load'
     M.methods
       initializer: -> 
         ok true
@@ -132,7 +131,6 @@ test "Dom-modules: DOM events (regular)", ->
   expect 10
 
   module (M) ->
-    M.init 'load'
     M.tree """
       .my-module1
         [type=button]
@@ -179,57 +177,7 @@ test "Dom-modules: DOM events (regular)", ->
     .trigger('kick')
     .end().remove()
 
-test "Dom-modules: DOM events (lazy)", ->
 
-  expect 10
-
-  module (M) ->
-    M.init 'lazy'
-    M.tree """
-      .my-module3
-        [type=button]
-        a
-    """
-    M.events """
-      lick typeButton  buttonLicked
-      lick  typeButton extraHandler
-      kick typeButton onKick
-
-      kick a  onKick   
-      kick a onKickA
-    """
-    M.event 'lick', 'typeButton', (element, event, eventData) ->
-      equal (typeof @buttonLicked), 'function', '(inline) `this` in handler is module instance'
-      equal element, @typeButton[0], '(inline) `element` in handler is event target'
-      equal eventData, 'abc', '(inline) `eventData` in handler ...'
-    M.methods
-      buttonLicked: (element, event, eventData) ->
-        equal (typeof @buttonLicked), 'function', '`this` in handler is module instance'
-        equal element, @typeButton[0], '`element` in handler is event target'
-        equal eventData, 'abc', '`eventData` in handler ...'
-      extraHandler: ->
-        ok true, "multiple handlers on same event"
-      onKick: ->
-        ok true, """
-          Different event on same element,
-          and one handler on multiple events.
-          Should be called twice.
-        """
-      onKickA: ->
-        ok true, 'another one'
-  myDiv = $ """
-    <div class=my-module3>
-      <input type=button value=lick_me>
-      <a href=#>kick me</a>
-    </div>
-  """
-  myDiv.appendTo('body')
-  myDiv.find('input')
-    .trigger('lick', 'abc')
-    .trigger('kick')
-    .end().find('a')
-    .trigger('kick')
-    .end().remove()
 
 test "Dom-modules: global DOM events (regular)", ->
 
@@ -242,7 +190,6 @@ test "Dom-modules: global DOM events (regular)", ->
     </div>
   """).appendTo 'body'
   module (M) ->
-    M.init 'load'
     M.root '.my-module4'
     M.globalEvent 'lick', 'body', (element, event, eventData) ->
       equal (typeof @onLickBody), 'function', '`this` in handler is module instance'
@@ -257,31 +204,7 @@ test "Dom-modules: global DOM events (regular)", ->
   $('body').trigger 'lick', 'abc'
   myDiv.remove()
 
-test "Dom-modules: global DOM events (lazy)", ->
 
-  expect 12
-  
-  module (M) ->
-    M.init 'lazy'
-    M.root '.my-module5'
-    M.globalEvent 'lick1', 'body', (element, event, eventData) ->
-      equal (typeof @onLickBody), 'function', '`this` in handler is module instance'
-      equal element, $('body')[0], '`element` in handler is event target'
-      equal eventData, 'abc', '`eventData` in handler ...'
-    M.globalEvent 'lick1', 'body', 'onLickBody'
-    M.methods 
-      onLickBody: (element, event, eventData) ->
-        equal (typeof @onLickBody), 'function', '`this` in handler is module instance'
-        equal element, $('body')[0], '`element` in handler is event target'
-        equal eventData, 'abc', '`eventData` in handler ...'
-  myDiv = $("""
-    <div>
-      <div class=my-module5 data-a=1></div>
-      <div class=my-module5 data-a=2></div>
-    </div>
-  """).appendTo 'body'
-  $('body').trigger 'lick1', 'abc'
-  myDiv.remove()
 
 test "Dom-modules: jquery-plugin (regular)", ->
 
@@ -294,32 +217,6 @@ test "Dom-modules: jquery-plugin (regular)", ->
   """).appendTo 'body'
   
   module 'Module1', (M) ->
-    M.init 'load'
-    M.root '.my-module2'
-    M.methods
-      foo: -> 'bar'
-      getA: -> @root.data 'a'
-
-  for instance in myDiv.find('div').modules 'Module1'
-    equal instance.foo(), 'bar', '.modules()'
-
-  for el in myDiv.find('div')
-    equal $(el).data('a'), $(el).module('Module1').getA(), '.module()'
-
-  myDiv.remove()
-
-test "Dom-modules: jquery-plugin (lazy)", ->
-
-  myDiv = $("""
-    <div>
-      <div class=my-module2 data-a=1></div>
-      <div class=my-module2 data-a=2></div>
-      <div class=my-module2 data-a=3></div>
-    </div>
-  """).appendTo 'body'
-  
-  module 'Module1', (M) ->
-    M.init 'lazy'
     M.root '.my-module2'
     M.methods
       foo: -> 'bar'

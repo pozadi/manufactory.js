@@ -25,9 +25,6 @@ __moduleEvents = {
     moduleInstance._eventHandlers[eventName] = handlers
 }
 
-LAZY = 'lazy'
-LOAD = 'load'
-NONE = 'none'
 DYNAMIC = 'dynamic'
 HTML_INSERTED = 'html-inserted'
 LAMBDA_MODULE = 'LambdaModule'
@@ -42,11 +39,10 @@ class BaseModule
         @settings[option] = data[option]
     $.extend @settings, settings
     @root.data @constructor.NAME, @
-    @_bind() unless @constructor.INIT is LAZY
+    @_bind()
     @updateTree()
     @root.on HTML_INSERTED, => @updateTree()
-    if __moduleInstances[@constructor.NAME] is undefined
-      __moduleInstances[@constructor.NAME] = []
+    __moduleInstances[@constructor.NAME] or= []
     __moduleInstances[@constructor.NAME].push @
     @initializer?()
 
@@ -62,22 +58,6 @@ class BaseModule
       args.unshift @
       handler args...
 
-  @_fixHandler: (handler) ->
-    moduleClass = @
-    (args...) ->
-      rootElement = $(@).parents moduleClass.ROOT_SELECTOR
-      moduleInstance = rootElement.module moduleClass.NAME
-      handler = moduleInstance._fixHandler handler
-      handler.apply @, args
-
-  @_fixHandlerAlt: (handler) ->
-    moduleClass = @
-    (args...) ->
-      for rootElement in $ moduleClass.ROOT_SELECTOR
-        moduleInstance = $(rootElement).module moduleClass.NAME
-        _handler = moduleInstance._fixHandler handler
-        _handler.apply @, args
-
   @_nameToSelector: (name) ->
     @ELEMENTS[name].selector
 
@@ -92,17 +72,6 @@ class BaseModule
     for eventMeta in @constructor.MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
       __moduleEvents.bindGlobal eventName, moduleName, @_fixHandler handler
-
-  @_bind: ->
-    for eventMeta in @EVENTS
-      {handler, eventName, elementName} = eventMeta
-      selector = @_nameToSelector elementName
-      selector = "#{@ROOT_SELECTOR} #{selector}"
-      do (eventName, selector, handler) =>
-        $(document).on eventName, selector, @_fixHandler handler
-    for eventMeta in @GLOBAL_EVENTS
-      {eventName, selector, handler} = eventMeta
-      $(document).on eventName, selector, @_fixHandlerAlt handler
 
   find: (args...) ->
     @root.find args...
@@ -130,19 +99,14 @@ class ModuleInfo
     @_moduleEvents = []
     @_defaultSettings = {}
     @_expectedSettings = []
-    @_init = 'none'
+    @_autoInit = true
 
   # Set all module events
   methods: (newMethods) ->
     $.extend @_methods, newMethods
 
-  # Set initialization mode
-  # Takes one of
-  #  'load'
-  #  'lazy'
-  #  'none'
-  init: (value) ->
-    @_init = value
+  autoInit: (value) ->
+    @_autoInit = value
 
   # Set root selector
   root: (rootSelector) ->
@@ -222,7 +186,6 @@ class ModuleInfo
   expectSettings: (expectedSettings...) ->
     @_expectedSettings = _.union @_expectedSettings, _.flatten expectedSettings
 
-  # 
   extends: (moduleName) ->
     # TODO
 
@@ -251,7 +214,7 @@ buildModule = (moduleName, builder) ->
   newModule.ROOT_SELECTOR = info._rootSelector
   newModule.ELEMENTS = info._elements
   newModule.EXPECTED_SETTINGS = info._expectedSettings
-  newModule.INIT = info._init
+  newModule.AUTO_INIT = info._autoInit
 
   for name, element of newModule.ELEMENTS
     if element.dynamic
@@ -275,12 +238,9 @@ buildModule = (moduleName, builder) ->
       currentScope = currentScope[part]
     currentScope[theName] = newModule
 
-  if newModule.INIT is LOAD
+  if newModule.AUTO_INIT
     $ ->
       modulesAPI.init newModule.NAME
-
-  if newModule.INIT is LAZY
-    newModule._bind()
 
   return newModule
   
@@ -304,7 +264,7 @@ modulesAPI =
           new Module($ el)
 
   initAll: (context = document) ->
-    for moduleName, Module of __modules when Module.INIT is LOAD
+    for moduleName, Module of __modules when Module.AUTO_INIT
       modulesAPI.init moduleName, Module, context
 
 jqueryPlugins =
