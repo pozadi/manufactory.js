@@ -1,5 +1,29 @@
 __modules = {}
 __moduleInstances = {}
+__moduleEvents = {
+  _globalHandlers: {}
+  trigger: (moduleInstance, eventName, data) ->
+    globalHandlers = @_globalHandlers[moduleInstance.constructor.NAME]?[eventName] or []
+    localHandlers = moduleInstance._eventHandlers?[eventName] or []
+    for handler in _.union localHandlers, globalHandlers
+      handler.call moduleInstance, moduleInstance, data, eventName
+  bindGlobal: (moduleName, eventName, handler) ->
+    @_globalHandlers[moduleName] or= {}
+    @_globalHandlers[moduleName][eventName] or= []
+    @_globalHandlers[moduleName][eventName].push handler
+  unbindGlobal: (moduleName, eventName, handler) ->
+    return unless @_globalHandlers[moduleName]?[eventName]
+    handlers = _.without @_globalHandlers[moduleName][eventName], handler
+    @_globalHandlers[moduleName][eventName] = handlers
+  bindLocal: (moduleInstance, eventName, handler) ->
+    moduleInstance._eventHandlers or= {}
+    moduleInstance._eventHandlers[eventName] or= []
+    moduleInstance._eventHandlers[eventName].push handler
+  unbindLocal: (moduleInstance, eventName, handler) ->
+    return unless moduleInstance._eventHandlers?[eventName]
+    handlers = _.without moduleInstance._eventHandlers[eventName], handler
+    moduleInstance._eventHandlers[eventName] = handlers
+}
 
 LAZY = 'lazy'
 LOAD = 'load'
@@ -33,28 +57,25 @@ class BaseModule
   _fixHandler: (handler) ->
     if typeof handler is 'string'
       handler = @[handler]
-    _.bind handler, @
-
-  _fixHandler2: (handler) ->
-    handler = @_fixHandler handler
+    handler = _.bind handler, @
     (args...) ->
       args.unshift @
       handler args...
 
-  @_fixHandler2: (handler) ->
+  @_fixHandler: (handler) ->
     moduleClass = @
     (args...) ->
       rootElement = $(@).parents moduleClass.ROOT_SELECTOR
       moduleInstance = rootElement.module moduleClass.NAME
-      handler = moduleInstance._fixHandler2 handler
+      handler = moduleInstance._fixHandler handler
       handler.apply @, args
 
-  @_fixHandler2alt: (handler) ->
+  @_fixHandlerAlt: (handler) ->
     moduleClass = @
     (args...) ->
       for rootElement in $ moduleClass.ROOT_SELECTOR
         moduleInstance = $(rootElement).module moduleClass.NAME
-        _handler = moduleInstance._fixHandler2 handler
+        _handler = moduleInstance._fixHandler handler
         _handler.apply @, args
 
   @_nameToSelector: (name) ->
@@ -64,10 +85,10 @@ class BaseModule
     for eventMeta in @constructor.EVENTS
       {handler, eventName, elementName} = eventMeta
       selector = @constructor._nameToSelector elementName
-      @root.on eventName, selector, @_fixHandler2 handler
+      @root.on eventName, selector, @_fixHandler handler
     for eventMeta in @constructor.GLOBAL_EVENTS
       {eventName, selector, handler} = eventMeta
-      $(document).on eventName, selector, @_fixHandler2 handler
+      $(document).on eventName, selector, @_fixHandler handler
 
   @_bind: ->
     for eventMeta in @EVENTS
@@ -75,34 +96,30 @@ class BaseModule
       selector = @_nameToSelector elementName
       selector = "#{@ROOT_SELECTOR} #{selector}"
       do (eventName, selector, handler) =>
-        $(document).on eventName, selector, @_fixHandler2 handler
+        $(document).on eventName, selector, @_fixHandler handler
     for eventMeta in @GLOBAL_EVENTS
       {eventName, selector, handler} = eventMeta
-      $(document).on eventName, selector, @_fixHandler2alt handler
-
+      $(document).on eventName, selector, @_fixHandlerAlt handler
 
   find: (args...) ->
     @root.find args...
 
-  on: (eventName, args...) ->
-    @root.on @constructor.fixEventName(eventName), args...
+  on: (eventName, handler) ->
+    __moduleEvents.bindLocal @, eventName, handler
 
-  off: (eventName, args...) ->
-    @root.off @constructor.fixEventName(eventName), args...
+  off: (eventName, handler) ->
+    __moduleEvents.unbindLocal @, eventName, handler
   
-  fire: (eventName, args...) ->
-    @root.trigger @constructor.fixEventName(eventName), args...
+  fire: (eventName, data) ->
+    __moduleEvents.trigger @, eventName, data
 
   setOption: (name, value) ->
     @settings[name] = value
 
-  @fixEventName: (name) ->
-    "#{@constructor.EVENT_PREFIX}-#{name}"
-
 
 class ModuleInfo
 
-  constructor: (@_name) ->
+  constructor: ->
     @_methods = {}
     @_elements = {}
     @_events = []
@@ -197,31 +214,21 @@ class ModuleInfo
     @_expectedSettings = _.union @_expectedSettings, _.flatten expectedSettings
 
   # 
-  dependsOn: (moduleNames...) ->
-    # TODO
-
-  # 
   extends: (moduleName) ->
     # TODO
 
-  # Set module event prefix
-  # That prefix will added to module event name, when it will proxied
-  # to DOM event
-  eventPrefix: (prefix) ->
-    @_eventPrefix = prefix
-
 lastNameId = 0
-genName = -> 
+genLambdaName = -> 
   "#{LAMBDA_MODULE}#{lastNameId++}"
 
 buildModule = (moduleName, builder) ->
 
   if builder is undefined
     builder = moduleName
-    moduleName = genName()
+    moduleName = genLambdaName()
     lambdaModule = true
 
-  info = new ModuleInfo moduleName
+  info = new ModuleInfo
   builder info
 
   newModule = class extends BaseModule
@@ -229,16 +236,12 @@ buildModule = (moduleName, builder) ->
   newModule.NAME = moduleName
   newModule.LAMBDA = !!lambdaModule
   newModule.DEFAULT_SETTINGS = info._defaultSettings
-  newModule.EVENT_PREFIX = info._eventPrefix or moduleName
   newModule.EVENTS = info._events
   newModule.GLOBAL_EVENTS = info._globalEvents
   newModule.ROOT_SELECTOR = info._rootSelector
   newModule.ELEMENTS = info._elements
   newModule.EXPECTED_SETTINGS = info._expectedSettings
   newModule.INIT = info._init
-
-  for name, value of info._methods
-    newModule::[name] = value
 
   for name, element of newModule.ELEMENTS
     if element.dynamic
@@ -247,6 +250,8 @@ buildModule = (moduleName, builder) ->
           @find element.selector
     else
       newModule::[name] = $()
+
+  $.extend newModule.prototype, info._methods
 
   __modules[moduleName] = newModule
 
@@ -275,10 +280,10 @@ modulesAPI =
     __moduleInstances[moduleName] or []
 
   on: (moduleName, eventName, callback) ->
-    $(document).on __modules[moduleName].fixEventName(eventName), (e) ->
-      moduleInstance = $(e.target).modules(moduleName)[0]
-      callback moduleInstance if moduleInstance
-      true
+    __moduleEvents.bindGlobal moduleName, eventName, callback
+
+  off:  (moduleName, eventName, callback) ->
+    __moduleEvents.unbindGlobal moduleName, eventName, callback
 
   init: (moduleName, Module = __modules[moduleName], context = document) ->
     if Module
@@ -294,13 +299,12 @@ modulesAPI =
 
 jqueryPlugins =
   modules: (moduleName) ->
-    _.compact( $(el).module(moduleName) for el in @ )
+    _.compact($(el).module(moduleName) for el in @)
   module: (moduleName) ->
     instance = @first().data(moduleName)
     unless instance
       ModuleClass = __modules[moduleName]
-      if ModuleClass.INIT is LAZY
-        instance = new ModuleClass @first()
+      instance = new ModuleClass @first()
     instance
 
 $(document).on HTML_INSERTED, (e) -> modulesAPI.initAll e.target

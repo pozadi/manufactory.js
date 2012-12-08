@@ -265,7 +265,6 @@ test "Dom-modules: global DOM events (lazy)", ->
     M.init 'lazy'
     M.root '.my-module5'
     M.globalEvent 'lick1', 'body', (element, event, eventData) ->
-      debugger
       equal (typeof @onLickBody), 'function', '`this` in handler is module instance'
       equal element, $('body')[0], '`element` in handler is event target'
       equal eventData, 'abc', '`eventData` in handler ...'
@@ -335,5 +334,50 @@ test "Dom-modules: jquery-plugin (lazy)", ->
   myDiv.remove()
 
 
+test "Dom-modules: module events (local)", ->
+
+  expect 2
+
+  MyModule = module (M) ->
+
+  myInstance = new MyModule $('body')
+
+  handler = (instance, data) ->
+    equal data, 'abc'
+    equal instance, myInstance
+
+  myInstance.on 'event-1', handler
+
+  myInstance.fire 'event-1', 'abc'
+  myInstance.fire 'not-listened-event'
+
+  myInstance.off 'event-1', handler
+
+  myInstance.fire 'event-1', 'abc'
 
 
+test "Dom-modules: module events (global)", ->
+
+  expect 2
+
+  module 'SuperModule', (M) ->
+
+  myInstance = new SuperModule $('body')
+
+  handler = (instance, data) ->
+    equal data, 'abc'
+    equal instance, myInstance
+
+  modules.on 'SuperModule', 'event-1', handler
+
+  myInstance.fire 'event-1', 'abc'
+  myInstance.fire 'not-listened-event'
+
+  modules.off 'SuperModule', 'event-1', handler
+
+  myInstance.fire 'event-1', 'abc'
+
+
+test "Dom-modules: module events (syntax sugar)", ->
+
+  ok 'todo'
