@@ -6,28 +6,34 @@ test "Dom-modules: elements", ->
 
   MyModule = module (M) ->
     M.element '.abc', 'foo', true
-  deepEqual MyModule.ELEMENTS, {foo: {selector: '.abc', dynamic: true}}, 'M.element() works'
-
-  MyModule = module (M) ->
     M.element 'input[name=abc]'
+    M.element 'body', null, false, true
+    M.element 'body', 'theBody', true, true
   deepEqual MyModule.ELEMENTS, {
-    inputNameAbc: {selector: 'input[name=abc]', dynamic: false}
-  }, 'M.element() works #2'
+    foo: {selector: '.abc', dynamic: true, global: false}
+    inputNameAbc: {selector: 'input[name=abc]', dynamic: false, global: false}
+    body: {selector: 'body', dynamic: false, global: true}
+    theBody: {selector: 'body', dynamic: true, global: true}
+  }, 'M.element() works'
 
   MyModule = module (M) ->
     M.tree """
       .abc
 
-        [type=button]  
+        [type=button] 
         ul / items %useless_option%  
           li / item dynamic
+      body / theBody global
+      body / global dynamic
     """
-  equal MyModule.ROOT_SELECTOR, '.abc', 'M.tree() works'
+  equal MyModule.ROOT_SELECTOR, '.abc', 'M.tree() works (root)'
   deepEqual(MyModule.ELEMENTS, {
-    typeButton: {selector: '[type=button]', dynamic: false}
-    items: {selector: 'ul', dynamic: false}
-    item: {selector: 'li', dynamic: true}
-  }, 'M.tree() works #2')
+    typeButton: {selector: '[type=button]', dynamic: false, global: false}
+    items: {selector: 'ul', dynamic: false, global: false}
+    item: {selector: 'li', dynamic: true, global: false}
+    theBody: {selector: 'body', dynamic: false, global: true}
+    body: {selector: 'body', dynamic: true, global: true}
+  }, 'M.tree() works (elements)')
   console.log MyModule.ELEMENTS
 
   myDiv = $("""
@@ -51,6 +57,12 @@ test "Dom-modules: elements", ->
   a = myInstance.item().get()
   b = myDiv.find('li').get()
   deepEqual a, b, '@%dynamic_element_name%() accesor works'
+  a = myInstance.theBody.get()
+  b = $('body').get()
+  deepEqual a, b, 'Hey!'
+  a = myInstance.body().get()
+  b = $('body').get()
+  deepEqual a, b, 'Ho!'
   myDiv.remove()
 
   myDiv = $("<div></div>").appendTo 'body'
@@ -126,7 +138,7 @@ test "Dom-modules: initialization (load)", ->
 
   $(el).remove() for el in elements
 
-test "Dom-modules: DOM events (regular)", ->
+test "Dom-modules: DOM events", ->
 
   expect 10
 
@@ -179,7 +191,7 @@ test "Dom-modules: DOM events (regular)", ->
 
 
 
-test "Dom-modules: global DOM events (regular)", ->
+test "Dom-modules: global DOM events", ->
 
   expect 12
 
@@ -191,11 +203,12 @@ test "Dom-modules: global DOM events (regular)", ->
   """).appendTo 'body'
   module (M) ->
     M.root '.my-module4'
-    M.globalEvent 'lick', 'body', (element, event, eventData) ->
+    M.element 'body', 'theBody', false, true
+    M.event 'lick', 'theBody', (element, event, eventData) ->
       equal (typeof @onLickBody), 'function', '`this` in handler is module instance'
       equal element, $('body')[0], '`element` in handler is event target'
       equal eventData, 'abc', '`eventData` in handler ...'
-    M.globalEvent 'lick', 'body', 'onLickBody'
+    M.event 'lick', 'theBody', 'onLickBody'
     M.methods 
       onLickBody: (element, event, eventData) ->
         equal (typeof @onLickBody), 'function', '`this` in handler is module instance'
@@ -206,7 +219,7 @@ test "Dom-modules: global DOM events (regular)", ->
 
 
 
-test "Dom-modules: jquery-plugin (regular)", ->
+test "Dom-modules: jquery-plugin", ->
 
   myDiv = $("""
     <div>

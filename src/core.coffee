@@ -26,6 +26,7 @@ __moduleEvents = {
 }
 
 DYNAMIC = 'dynamic'
+GLOBAL = 'global'
 HTML_INSERTED = 'html-inserted'
 LAMBDA_MODULE = 'LambdaModule'
 
@@ -48,7 +49,10 @@ class BaseModule
 
   updateTree: ->
     for name, element of @constructor.ELEMENTS when not element.dynamic
-      @[name] = @find element.selector
+      if element.global
+        @[name] = $ element.selector
+      else
+        @[name] = @find element.selector
 
   _fixHandler: (handler) ->
     if typeof handler is 'string'
@@ -58,17 +62,14 @@ class BaseModule
       args.unshift @
       handler args...
 
-  @_nameToSelector: (name) ->
-    @ELEMENTS[name].selector
-
   _bind: ->
     for eventMeta in @constructor.EVENTS
       {handler, eventName, elementName} = eventMeta
-      selector = @constructor._nameToSelector elementName
-      @root.on eventName, selector, @_fixHandler handler
-    for eventMeta in @constructor.GLOBAL_EVENTS
-      {eventName, selector, handler} = eventMeta
-      $(document).on eventName, selector, @_fixHandler handler
+      {selector, global} = @constructor.ELEMENTS[elementName]
+      if global
+        $(document).on eventName, selector, @_fixHandler handler
+      else
+        @root.on eventName, selector, @_fixHandler handler
     for eventMeta in @constructor.MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
       __moduleEvents.bindGlobal eventName, moduleName, @_fixHandler handler
@@ -95,7 +96,6 @@ class ModuleInfo
     @_methods = {}
     @_elements = {}
     @_events = []
-    @_globalEvents = []
     @_moduleEvents = []
     @_defaultSettings = {}
     @_expectedSettings = []
@@ -132,10 +132,10 @@ class ModuleInfo
     ).join ''
 
   # Add element module interact with
-  element: (selector, name=null, dynamic=false) ->
+  element: (selector, name=null, dynamic=false, global=false) ->
     if name is null
       name = @constructor.selectorToName selector
-    @_elements[name] = {selector, dynamic}
+    @_elements[name] = {selector, dynamic, global}
 
   # Set root selector and all elements at once
   tree: (treeString) ->
@@ -143,14 +143,9 @@ class ModuleInfo
     @root lines.shift()
     for line in lines
       [selector, options] = _.map line.split('/'), $.trim
-      if options
-        [name, options...] = options.split /\s+/
-        name = $.trim name
-        options = _.map options, $.trim
-      else
-        name = null
-        options = []
-      @element selector, name, DYNAMIC in options
+      options = _.map ((options or '').split /\s+/), $.trim
+      name = _.filter(options, (l) -> not (l in [DYNAMIC, GLOBAL]))[0] or null
+      @element selector, name, DYNAMIC in options, GLOBAL in options
 
   event: (eventName, elementName, handler) ->
     @_events.push {elementName, eventName, handler}
@@ -171,13 +166,6 @@ class ModuleInfo
     for line in lines
       [eventName, moduleName, handlerName] = _(line.split /\s+/).map($.trim)
       @moduleEvent eventName, moduleName, handlerName
-
-  globalEvent: (eventName, selector, handler) ->
-    @_globalEvents.push {eventName, selector, handler}
-
-  # Set all global DOM events module wants to handle
-  globalEvents: (globalEventsString) ->
-    # TODO
   
   # Set default module settings
   defaultSettings: (newDefaultSettings) ->
@@ -210,7 +198,6 @@ buildModule = (moduleName, builder) ->
   newModule.DEFAULT_SETTINGS = info._defaultSettings
   newModule.EVENTS = info._events
   newModule.MODULE_EVENTS = info._moduleEvents
-  newModule.GLOBAL_EVENTS = info._globalEvents
   newModule.ROOT_SELECTOR = info._rootSelector
   newModule.ELEMENTS = info._elements
   newModule.EXPECTED_SETTINGS = info._expectedSettings
@@ -220,7 +207,10 @@ buildModule = (moduleName, builder) ->
     if element.dynamic
       do (name, element) ->
         newModule::[name] = ->
-          @find element.selector
+          if element.global
+            $ element.selector
+          else
+            @find element.selector
     else
       newModule::[name] = $()
 
@@ -257,6 +247,7 @@ modulesAPI =
 
   init: (moduleName, Module = __modules[moduleName], context = document) ->
     if Module
+      return unless Module.ROOT_SELECTOR
       elements = $(Module.ROOT_SELECTOR, context)
         .add $(context).filter(Module.ROOT_SELECTOR)
       for el in elements
