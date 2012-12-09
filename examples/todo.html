@@ -40,7 +40,6 @@
           item.toggleClass 'done', $(checkbox).prop 'checked'
         clear: ->
           @item().filter('.done').remove()
-      M.init 'load'
   </script>
 
   <style type="text/css">
@@ -61,7 +60,7 @@
 <body>
   
   <div class=todos>
-    <h1>ToDo <small>Remove completed</small></h1>
+    <h1>ToDo <small>Clear completed</small></h1>
     <ol>
       <li>
         <input type=checkbox> Nothing
