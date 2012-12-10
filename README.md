@@ -223,15 +223,15 @@ M.events """
 
 ### Глобальные функции (`window.`)
 
- * `[window.module([name], callback)](#windowmodulename-callback)` — создание модуля
+ * [`window.module([name], callback)`](#windowmodulename-callback) — создание модуля
 
 ### В конструкторе (`M.`)
 
- * `[M.tree(treeOfElements)](#mtreetreeofelements)` — описание элементов
- * `[M.root(selector)](#mrootselector-%D0%B8-melementselector-namenull-dynamicfalse-globalfalse)` — указание корневого селектора
- * `[M.element(selector, name=null, dynamic=false, global=false)](#mrootselector-%D0%B8-melementselector-namenull-dynamicfalse-globalfalse)` — добавление элемента
- * `[M.evets(eventsDescription)](#mevetseventsdescription)` — описание событий
- * `[M.event(eventName, elementName, handler)](#mevetseventsdescription)` — добавление события
+ * [`M.tree(treeOfElements)`](#mtreetreeofelements) — описание элементов
+ * [`M.root(selector)`](#mrootselector-%D0%B8-melementselector-namenull-dynamicfalse-globalfalse) — указание корневого селектора
+ * [`M.element(selector, name=null, dynamic=false, global=false)`](#mrootselector-%D0%B8-melementselector-namenull-dynamicfalse-globalfalse) — добавление элемента
+ * [`M.evets(eventsDescription)`](#mevetseventsdescription) — описание событий
+ * [`M.event(eventName, elementName, handler)`](#mevetseventsdescription) — добавление события
 
 ### В экземпляре модуля (`@`)
  
