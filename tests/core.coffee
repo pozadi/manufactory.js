@@ -22,9 +22,9 @@ test "Dom-modules: elements", ->
 
         [type=button] 
         ul / items %useless_option%  
-          li / item dynamic
-      body / theBody global
-      body / global dynamic
+          li /  item dynamic
+      body / theBody  global
+      body  / global dynamic
     """
   equal MyModule.ROOT_SELECTOR, '.abc', 'M.tree() works (root)'
   deepEqual(MyModule.ELEMENTS, {
