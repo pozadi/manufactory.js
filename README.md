@@ -71,8 +71,8 @@ module 'Todos', (M) ->
 
 ## Подключение
 
-    TODO
-
+Для работы библиотеки нужно подключить jQuery 1.8+, [Underscore.js](http://underscorejs.org/) 1.4.3+
+и саму библиотеку (файл [dom-modules.js](https://github.com/pozadi/dom-modules.js/blob/master/dom-modules.js))
 
 ## Создание модуля
 
@@ -210,25 +210,177 @@ M.events """
 
 ## События модулей
 
-    # TODO
+Библиотека предоставляет дополнительный уровень событий в дополнение к событиям
+DOM. События DOM срабатывают на элементах DOM, а события модулей на экземплярах
+модулей. Можно подписаться как на события конкретного экземпляра, так и на 
+события всех экземпляров определенного модуля.
+
+### `%module_instance%.on(eventName, handler)`
+
+Подписаться на событие экземпляра модуля. В обработчик передаются данные переданные в 
+функцию `fire()` и имя события. При этом в `this` будет ссылка на экземпляр 
+модуля на котором произошло событие.
+
+```CoffeeScript
+(data, eventName) ->
+  this # Ссылка на экземпляр модуля на котором произошло событие
+```
+
+### `window.modules.on(eventName, moduleName, handler)`
+
+Можно подписаться на события всех существующих и будущих экземпляров модуля. В
+обработчик передается всё так же как в предыдущем случае.
+
+### `%module_instance%.off(eventName, handler)`
+
+Отписать обработчик от события.
+
+### `window.modules.off(eventName, moduleName, handler)`
+
+Отписать обработчик от события.
+
+### `%module_instance%.fire(eventName, data)`
+
+Сгенерировать событие на экземпляре модуля.
+
+### `M.moduleEvents(moduleEventsDescription)`
+
+По задумке, вместо использования низкоуровневых методов `.on()`, все события
+описываются в декларативном стиле при создании модуля.
+
+```CoffeeScript
+M.modulesEvents """
+  eventNameA moduleNameA hadlerA
+  eventNameB moduleNameB hadlerB
+"""
+```
+
+Где `hadlerA` и `hadlerB` — методы создаваемого модуля. При этом нужно обратить
+внимание что в этих методах, в отличии от обработчика в `.on()`, в переменной
+`this` будет ссылка не на экземпляр на котором произошло событие, а на экземпляр
+к которому пренадлежит метод. Ссылка же на источник события будет передана 
+первым параметром.
+
+```CoffeeScript
+module 'ModuleA', (M) ->
+  ...
+  M.methods
+    someMethod: ->
+      ...
+      @fire 'important-event', {some: 'data'}
+
+module 'ModuleB', (M) ->
+  ...
+  M.moduleEvents """
+    important-event ModuleA onImpotentEvent
+  """
+  M.methods:
+    onImpotentEvent: (moduleAInstabce, data, eventName) ->
+      this            # Ссылка на экземпляр ModuleB
+      moduleAInstabce # Ссылка на экземпляр ModuleA
+      data            # {some: 'data'}
+      eventName       # 'important-event'
+```
+
+### `M.moduleEvent(eventName, moduleName, handler)`
+
+Тоже что и `M.event()` для `M.events()`.
 
 ## Методы
 
-    # TODO
+### `M.methods(object)`
+
+Функция для описания методеов модуля. Так же через нее можно добавить 
+дополнительные свойства модуля. Всё молжно быть понятно из примера:
+
+```CoffeeScript
+module 'SuperPuper', (M) ->
+  M.tree """
+    .super-puper
+      ul / list
+        li / item dynamic
+  """
+  M.methods
+    someProperty: 'foo'
+    someMethod: ->
+      this          # Ссылка на экземпляр модуля
+      @list         # jQuery-объект
+      @item()       # jQuery-объект
+      @someProperty # 'foo'
+      @fire( ... )  # Сгенерировать событие
+
+# Получение экземпляра модуля (подробнее ниже)
+instance = $('.super-puper').module 'SuperPuper'
+instance.someMethod()
+instance.list
+instance.someProperty
+```
 
 ## Инициализация
 
-    # TODO
+По умолчанию все модули автоматически инициализируются на элементах 
+соответствующих корневому селектору. Для этого и нужен корневой селектор.
+
+### `M.autoInit(boolean)`
+
+Можно отключить этот механизм, вызвав эту функцию и передав ей ложь.
+
+### Метод `initializer`
+
+При создании экземпляра модуля, которое происходит при автоматической 
+инициализации, и которое можно сделать вручную (`new MyModule( ... )`), 
+происходит вызов метода модуля `initializer`, если такой есть. В этод метод
+ничего не передается.
+
+### `window.modules.init(moduleName)`
+
+    TODO
+
+### `window.modules.initAll()`
+
+    TODO
+
+## Настройки
+
+    TODO
+
+## Доступ к экземплярам модулей
+
+Получить ссылку на экземпляр модуля можно множеством способов.
+
+1. Создав модуль `%экземпляр% = new Module(...)`
+2. Подписавшись на событие (см. События модулей)
+3. Получить из корневого DOM элемента (подробнее ниже)
+4. Через `window.modules.find()`
+
+### `$(...).modules(moduleName)`
+
+    TODO
+
+### `$(...).module(moduleName)`
+
+    TODO
+
+### `window.modules.find(moduleName)`
+
+    TODO
 
 ## Утилиты
 
-    # TODO
+### `window.action(actionName, handler)`
+
+    TODO
+
+### `$(...).htmlInserted()`
+
+    TODO
 
 ## API целиком
 
 ### Глобальные функции (`window.`)
 
  * [`window.module([name], callback)`](#windowmodulename-callback) — создание модуля
+ * [`window.action(actionName, handler)`](#windowactionactionname-handler)
 
 ### В конструкторе (`M.`)
 
@@ -237,21 +389,35 @@ M.events """
  * [`M.element(selector, name=null, dynamic=false, global=false)`](#mrootselector-%D0%B8-melementselector-namenull-dynamicfalse-globalfalse) — добавление элемента
  * [`M.evets(eventsDescription)`](#mevetseventsdescription) — описание событий
  * [`M.event(eventName, elementName, handler)`](#mevetseventsdescription) — добавление события
+ * [`M.moduleEvents(moduleEventsDescription)`](#mmoduleeventsmoduleeventsdescription)
+ * [`M.moduleEvent(eventName, moduleName, handler)`](#mmoduleeventeventname-modulename-handler)
+ * [`M.methods(object)`](#mmethodsobject)
+ * [`M.autoInit(boolean)`](#mautoinitboolean)
 
 ### В экземпляре модуля (`@`)
  
- * TODO
+ * `@root`
+ * `@%element_name%`
+ * `@%dynamic_element_name%()`
+ * `@find(...)` — алиас для `@root.find(...)`
+ * `@updateTree()`
+ * `@%method_name%()`
+ * [`@on(eventName, handler)`](#module_instanceoneventname-handler)
+ * [`@off(eventName, handler)`](#module_instanceoffeventname-handler)
+ * [`@fire(eventName, data)`](#module_instancefireeventname-data)
+ * `@settings`
+ * `@setOption(name, value)`
 
 ### %Придумать название% `window.modules.`
  
- * TODO
+ * [`.on(eventName, moduleName, handler)`](#windowmodulesoneventname-modulename-handler)
+ * [`.off(eventName, moduleName, handler)`](#windowmodulesoffeventname-modulename-handler)
+ * [`.find(moduleName)`](#windowmodulesfindmodulename)
+ * [`.init(moduleName)`](#windowmodulesinitmodulename)
+ * [`.initAll()`](#windowmodulesinitall)
 
 ### Плагины jQuery `$(...).`
  
- * TODO
-
-
-
-
-
-
+ * [`.module(moduleName)`](#modulemodulename)
+ * [`.modules(moduleName)`](#modulesmodulename)
+ * [`.htmlInserted()`](#htmlinserted)
