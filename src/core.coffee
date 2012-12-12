@@ -8,21 +8,13 @@ __moduleEvents = {
     for handler in _.union localHandlers, globalHandlers
       handler.call moduleInstance, data, eventName
   bindGlobal: (eventName, moduleName, handler) ->
-    @_globalHandlers[moduleName] or= {}
-    @_globalHandlers[moduleName][eventName] or= []
-    @_globalHandlers[moduleName][eventName].push handler
+    ((@_globalHandlers[moduleName] or= {})[eventName] or= []).push handler
   unbindGlobal: (eventName, moduleName, handler) ->
-    return unless @_globalHandlers[moduleName]?[eventName]
-    handlers = _.without @_globalHandlers[moduleName][eventName], handler
-    @_globalHandlers[moduleName][eventName] = handlers
+    _removeFromArray @_globalHandlers[moduleName]?[eventName], handler
   bindLocal: (moduleInstance, eventName, handler) ->
-    moduleInstance._eventHandlers or= {}
-    moduleInstance._eventHandlers[eventName] or= []
-    moduleInstance._eventHandlers[eventName].push handler
+    ((moduleInstance._eventHandlers or= {})[eventName] or= []).push handler
   unbindLocal: (moduleInstance, eventName, handler) ->
-    return unless moduleInstance._eventHandlers?[eventName]
-    handlers = _.without moduleInstance._eventHandlers[eventName], handler
-    moduleInstance._eventHandlers[eventName] = handlers
+    _removeFromArray moduleInstance._eventHandlers?[eventName], handler
 }
 
 
@@ -37,6 +29,11 @@ _whitespace = /\s+/
 _splitToLines =  (str) -> _(str.split '\n').filter (i) -> i != ''
 _notOption = (i) -> i not in [DYNAMIC, GLOBAL]
 _genLambdaName = -> _.uniqueId LAMBDA_MODULE
+_removeFromArray = (array, item) ->
+  if array and item
+    index = array.indexOf item
+    if index > -1
+      array.splice index, 1
 
 
 class BaseModule
@@ -51,16 +48,12 @@ class BaseModule
     @_bind()
     @updateTree()
     @root.on HTML_INSERTED, => @updateTree()
-    __moduleInstances[NAME] or= []
-    __moduleInstances[NAME].push @
+    (__moduleInstances[NAME] or= []).push @
     @initializer?()
 
   updateTree: ->
     for name, element of @constructor.ELEMENTS when not element.dynamic
-      if element.global
-        @[name] = $ element.selector
-      else
-        @[name] = @find element.selector
+      @[name] = $ element.selector, (if element.global then document else @root)
 
   _fixHandler: (handler) ->
     if typeof handler is 'string'
@@ -71,14 +64,15 @@ class BaseModule
       handler args...
 
   _bind: ->
-    for eventMeta in @constructor.EVENTS
+    {ELEMENTS, EVENTS, MODULE_EVENTS} = @constructor
+    for eventMeta in EVENTS
       {handler, eventName, elementName} = eventMeta
-      {selector, global} = @constructor.ELEMENTS[elementName]
-      if global
-        $(document).on eventName, selector, @_fixHandler handler
+      {selector, global} = ELEMENTS[elementName]
+      (if global
+        $(document) 
       else
-        @root.on eventName, selector, @_fixHandler handler
-    for eventMeta in @constructor.MODULE_EVENTS
+        @root).on eventName, selector, @_fixHandler handler
+    for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
       __moduleEvents.bindGlobal eventName, moduleName, @_fixHandler handler
 
@@ -210,10 +204,7 @@ window.module = (moduleName, builder) ->
     if element.dynamic
       do (name, element) ->
         newModule::[name] = ->
-          if element.global
-            $ element.selector
-          else
-            @find element.selector
+          $ element.selector, (if element.global then document else @root)
     else
       newModule::[name] = _emptyJQuery
 
@@ -236,21 +227,20 @@ window.module = (moduleName, builder) ->
   
 
 window.modules =
-  _modules: __modules
-  _moduleInstances: __moduleInstances
-  _moduleEvents: __moduleEvents
   find: (moduleName) ->
     __moduleInstances[moduleName] or []
   on: (eventName, moduleName, callback) ->
     __moduleEvents.bindGlobal eventName, moduleName, callback
   off:  (eventName, moduleName, callback) ->
     __moduleEvents.unbindGlobal eventName, moduleName, callback
-  init: (moduleName, Module = __modules[moduleName], context = document) ->
-    for el in $(Module?.ROOT_SELECTOR, context).add $(context).filter Module?.ROOT_SELECTOR
-      new Module $ el
+  init: (moduleName, context = document) ->
+    selector = __modules[moduleName].ROOT_SELECTOR
+    if selector
+      for el in $(selector, context).add $(context).filter selector
+        new __modules[moduleName] $ el
   initAll: (context = document) ->
     for moduleName, Module of __modules when Module.AUTO_INIT
-      @init moduleName, Module, context
+      @init moduleName, context
 
 
 _.extend jQuery::, {
@@ -258,7 +248,7 @@ _.extend jQuery::, {
     if @length
       new __modules[moduleName] @first()
   htmlInserted: ->
-    @trigger 'html-inserted'
+    @trigger HTML_INSERTED
 }
 
 
