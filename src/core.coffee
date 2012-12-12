@@ -43,6 +43,8 @@ class BaseModule
 
   constructor: (@root, settings) ->
     {EXPECTED_SETTINGS, DEFAULT_SETTINGS, NAME} = @constructor
+    if existing = @root.data NAME
+      return existing
     dataSettings = _.pick @root.data(), EXPECTED_SETTINGS
     @settings = _.extend {}, DEFAULT_SETTINGS, dataSettings, settings
     @root.data NAME, @
@@ -182,7 +184,7 @@ class ModuleInfo
     @_expectedSettings = _.union @_expectedSettings, _.flatten expectedSettings
 
 
-buildModule = (moduleName, builder) ->
+window.module = (moduleName, builder) ->
 
   if builder is undefined
     builder = moduleName
@@ -220,7 +222,7 @@ buildModule = (moduleName, builder) ->
   __modules[moduleName] = newModule
 
   if newModule.AUTO_INIT
-    $ -> modulesAPI.init newModule.NAME
+    $ -> window.modules.init newModule.NAME
 
   unless lambdaModule
     parts = moduleName.split '.'
@@ -233,7 +235,7 @@ buildModule = (moduleName, builder) ->
   return newModule
   
 
-modulesAPI =
+window.modules =
   _modules: __modules
   _moduleInstances: __moduleInstances
   _moduleEvents: __moduleEvents
@@ -244,30 +246,21 @@ modulesAPI =
   off:  (eventName, moduleName, callback) ->
     __moduleEvents.unbindGlobal eventName, moduleName, callback
   init: (moduleName, Module = __modules[moduleName], context = document) ->
-    $(Module?.ROOT_SELECTOR, context)
-      .add($(context).filter Module?.ROOT_SELECTOR)
-      .modules moduleName
+    for el in $(Module?.ROOT_SELECTOR, context).add $(context).filter Module?.ROOT_SELECTOR
+      new Module $ el
   initAll: (context = document) ->
     for moduleName, Module of __modules when Module.AUTO_INIT
       @init moduleName, Module, context
 
 
-jqueryPlugins =
-  modules: (moduleName) ->
-    _.compact($(el).module(moduleName) for el in @)
+_.extend jQuery::, {
   module: (moduleName) ->
-    instance = @first().data(moduleName)
-    unless instance
-      ModuleClass = __modules[moduleName]
-      instance = new ModuleClass @first()
-    instance
+    if @length
+      new __modules[moduleName] @first()
+  htmlInserted: ->
+    @trigger 'html-inserted'
+}
 
 
-$(document).on HTML_INSERTED, (e) -> modulesAPI.initAll e.target
-
-
-window.module = buildModule
-window.modules = modulesAPI
-_.extend jQuery::, jqueryPlugins
-
+$(document).on HTML_INSERTED, (e) -> window.modules.initAll e.target
 

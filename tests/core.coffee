@@ -104,14 +104,16 @@ test "Dom-modules: settings", ->
 
   MyModule = module (M) ->
     M.expectSettings 'foo', 'bar'
-  myDiv = $('<div data-foo="abc" data-some="abc1"></div>')
 
+  myDiv = $('<div data-foo="abc" data-some="abc1"></div>')
   inst_1 = new MyModule myDiv
   deepEqual inst_1.settings, {foo: 'abc'}, 'settings grubs from data-*'
 
+  myDiv = $('<div data-foo="abc" data-some="abc1"></div>')
   inst_2 = new MyModule myDiv, {baz: 'abc2'}
   deepEqual inst_2.settings, {foo: 'abc', baz: 'abc2'}, 'settings pased to constructor has accepted'
 
+  myDiv = $('<div data-foo="abc" data-some="abc1"></div>')
   inst_3 = new MyModule myDiv, {foo: 'abc2'}
   deepEqual inst_3.settings, {foo: 'abc2'}, 'settings pased to constructor overvrites data-settings'
 
@@ -234,9 +236,6 @@ test "Dom-modules: jquery-plugin", ->
     M.methods
       foo: -> 'bar'
       getA: -> @root.data 'a'
-
-  for instance in myDiv.find('div').modules 'Module1'
-    equal instance.foo(), 'bar', '.modules()'
 
   for el in myDiv.find('div')
     equal $(el).data('a'), $(el).module('Module1').getA(), '.module()'
