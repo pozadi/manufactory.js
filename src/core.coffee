@@ -55,6 +55,21 @@ class BaseModule
     for name, element of @constructor.ELEMENTS when not element.dynamic
       @[name] = $ element.selector, (if element.global then document else @root)
 
+  find: (args...) ->
+    @root.find args...
+
+  on: (eventName, handler) ->
+    __moduleEvents.bindLocal @, eventName, handler
+
+  off: (eventName, handler) ->
+    __moduleEvents.unbindLocal @, eventName, handler
+  
+  fire: (eventName, data) ->
+    __moduleEvents.trigger @, eventName, data
+
+  setOption: (name, value) ->
+    @settings[name] = value
+
   _fixHandler: (handler) ->
     if typeof handler is 'string'
       handler = @[handler]
@@ -75,21 +90,6 @@ class BaseModule
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
       __moduleEvents.bindGlobal eventName, moduleName, @_fixHandler handler
-
-  find: (args...) ->
-    @root.find args...
-
-  on: (eventName, handler) ->
-    __moduleEvents.bindLocal @, eventName, handler
-
-  off: (eventName, handler) ->
-    __moduleEvents.unbindLocal @, eventName, handler
-  
-  fire: (eventName, data) ->
-    __moduleEvents.trigger @, eventName, data
-
-  setOption: (name, value) ->
-    @settings[name] = value
 
 
 class ModuleInfo
@@ -200,15 +200,15 @@ window.module = (moduleName, builder) ->
   newModule.EXPECTED_SETTINGS = info._expectedSettings
   newModule.AUTO_INIT         = info._autoInit
 
-  for name, element of newModule.ELEMENTS
+  for name, element of newModule.ELEMENTS 
     if element.dynamic
-      do (name, element) ->
+      do (element) ->
         newModule::[name] = ->
           $ element.selector, (if element.global then document else @root)
     else
       newModule::[name] = _emptyJQuery
 
-  _.extend newModule.prototype, info._methods
+  _.extend newModule::, info._methods
 
   __modules[moduleName] = newModule
 

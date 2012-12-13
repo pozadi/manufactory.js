@@ -115,6 +115,28 @@
       return _results;
     };
 
+    BaseModule.prototype.find = function() {
+      var args, _ref;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return (_ref = this.root).find.apply(_ref, args);
+    };
+
+    BaseModule.prototype.on = function(eventName, handler) {
+      return __moduleEvents.bindLocal(this, eventName, handler);
+    };
+
+    BaseModule.prototype.off = function(eventName, handler) {
+      return __moduleEvents.unbindLocal(this, eventName, handler);
+    };
+
+    BaseModule.prototype.fire = function(eventName, data) {
+      return __moduleEvents.trigger(this, eventName, data);
+    };
+
+    BaseModule.prototype.setOption = function(name, value) {
+      return this.settings[name] = value;
+    };
+
     BaseModule.prototype._fixHandler = function(handler) {
       if (typeof handler === 'string') {
         handler = this[handler];
@@ -144,28 +166,6 @@
         _results.push(__moduleEvents.bindGlobal(eventName, moduleName, this._fixHandler(handler)));
       }
       return _results;
-    };
-
-    BaseModule.prototype.find = function() {
-      var args, _ref;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return (_ref = this.root).find.apply(_ref, args);
-    };
-
-    BaseModule.prototype.on = function(eventName, handler) {
-      return __moduleEvents.bindLocal(this, eventName, handler);
-    };
-
-    BaseModule.prototype.off = function(eventName, handler) {
-      return __moduleEvents.unbindLocal(this, eventName, handler);
-    };
-
-    BaseModule.prototype.fire = function(eventName, data) {
-      return __moduleEvents.trigger(this, eventName, data);
-    };
-
-    BaseModule.prototype.setOption = function(name, value) {
-      return this.settings[name] = value;
     };
 
     return BaseModule;
@@ -342,11 +342,11 @@
     for (name in _ref) {
       element = _ref[name];
       if (element.dynamic) {
-        (function(name, element) {
+        (function(element) {
           return newModule.prototype[name] = function() {
             return $(element.selector, (element.global ? document : this.root));
           };
-        })(name, element);
+        })(element);
       } else {
         newModule.prototype[name] = _emptyJQuery;
       }
