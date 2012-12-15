@@ -20,7 +20,7 @@ __moduleEvents = {
 
 DYNAMIC = 'dynamic'
 GLOBAL = 'global'
-HTML_INSERTED = 'html-inserted'
+NEW_HTML = 'new-html'
 LAMBDA_MODULE = 'LambdaModule'
 
 
@@ -47,7 +47,7 @@ class BaseModule
     @root.data NAME, @
     @_bind()
     @updateTree()
-    @root.on HTML_INSERTED, => @updateTree()
+    @root.on NEW_HTML, => @updateTree()
     (__moduleInstances[NAME] or= []).push @
     @initializer?()
 
@@ -247,8 +247,8 @@ _.extend jQuery::, {
   module: (moduleName) ->
     if @length
       new __modules[moduleName] @first()
-  htmlInserted: ->
-    @trigger HTML_INSERTED
+  newHtml: ->
+    @trigger NEW_HTML
 }
 
 
@@ -270,4 +270,4 @@ window.action.matcher = (actions) ->
   $(selector).length > 0
 
 
-$(document).on HTML_INSERTED, (e) -> window.modules.initAll e.target
+$(document).on NEW_HTML, (e) -> window.modules.initAll e.target

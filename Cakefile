@@ -4,7 +4,7 @@ sys = require 'sys'
 sources = 'src/core'
 output = 'module-factory'
 
-testsSources = 'tests/core tests/html-inserted tests/action'
+testsSources = 'tests/core tests/new-html tests/action'
 testsOutput = 'tests/js'
 
 run = (comand) ->

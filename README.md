@@ -359,7 +359,7 @@ instance.someProperty
 
     TODO
 
-### `$(...).htmlInserted()`
+### `$(...).newHtml()`
 
     TODO
 
@@ -407,4 +407,4 @@ instance.someProperty
 ### Плагины jQuery `$(...).`
  
  * [`.module(moduleName)`](#modulemodulename)
- * [`.htmlInserted()`](#htmlinserted)
+ * [`.newHtml()`](#newhtml)
