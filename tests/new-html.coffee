@@ -1,12 +1,14 @@
 test ".newHtml()", ->
 
-  expect 2
+  expect 4
 
   equal typeof $().newHtml, 'function', "expect .newHtml() to be defined"
 
-  myDiv = $('<div>test</div>').appendTo('body')
-  myDiv.on 'new-html', ->
+  myDiv = $('<div></div>').appendTo('body')
+  myDiv.newHtml ->
     ok true, "event handler runs when .newHtml() calls"
-    myDiv.remove()
+  myDiv.newHtml true, ->
+    ok true, "should be called twice"
 
   myDiv.newHtml()
+  myDiv.newHtml(true)

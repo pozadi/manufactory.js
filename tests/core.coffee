@@ -72,11 +72,11 @@ test "elements", ->
   a = myInstance.typeButton.get()
   b = []
   deepEqual a, b, 'element accesor empty before element added'
-  myDiv.append(button).newHtml()
+  myDiv.append(button).newHtml(true)
   a = myInstance.typeButton.get()
   b = button.get()
   deepEqual a, b, 'element accesed after it was added'
-  list.appendTo(myDiv).newHtml()
+  list.appendTo(myDiv).newHtml(true)
   a = myInstance.items.get()
   b = list.get()
   deepEqual a, b, 'element accesed after it was added #2'
