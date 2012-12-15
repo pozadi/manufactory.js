@@ -252,5 +252,22 @@ _.extend jQuery::, {
 }
 
 
-$(document).on HTML_INSERTED, (e) -> window.modules.initAll e.target
+# Run some JavaScript only on particular action.
+#   action 'controller_name#action_name', -> ...
+#   action 'foo#bar', 'foo#baz', -> ...
+window.action = (args...) ->
+  $ ->
+    callback = args.pop()
+    callback() if action.matcher(a.split('#') for a in args)
 
+# Check if some of listed actions handling now.
+# You can redefine this function.
+#   action.matcher [['controller_name', 'action_name'], [...], ...]
+window.action.matcher = (actions) ->
+  selector = (for a in actions
+    # Suppose you add .controller-foo and .action-bar classes to body on server-side.
+    "body.controller-#{a[0]}.action-#{a[1]}").join ', '
+  $(selector).length > 0
+
+
+$(document).on HTML_INSERTED, (e) -> window.modules.initAll e.target

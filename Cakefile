@@ -1,7 +1,7 @@
 {exec} = require 'child_process'
 sys = require 'sys'
 
-sources = 'src/core src/action'
+sources = 'src/core'
 output = 'module-factory'
 
 testsSources = 'tests/core tests/html-inserted tests/action'
