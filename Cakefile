@@ -2,7 +2,7 @@
 sys = require 'sys'
 
 sources = 'src/core'
-output = 'module-factory'
+output = 'manufactory'
 
 testsSources = 'tests/core tests/new-html tests/action'
 testsOutput = 'tests/js'
@@ -13,6 +13,8 @@ run = (comand) ->
 
 task 'build', 'build things', ->
   run "coffee -c -j #{output} #{sources}"
+  run "coffee -c -o #{testsOutput} #{testsSources}"
+
 
 task 'watch', 'watch things to be updated', ->
   run "coffee -cw -j #{output} #{sources}"
