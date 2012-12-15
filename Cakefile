@@ -2,7 +2,7 @@
 sys = require 'sys'
 
 sources = 'src/core src/action'
-output = 'dom-modules'
+output = 'module-factory'
 
 testsSources = 'tests/core tests/html-inserted tests/action'
 testsOutput = 'tests/js'

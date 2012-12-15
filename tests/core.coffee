@@ -1,4 +1,4 @@
-test "Dom-modules: elements", ->
+test "elements", ->
 
   MyModule = module (M) ->
     M.root '.abc'
@@ -82,13 +82,13 @@ test "Dom-modules: elements", ->
   deepEqual a, b, 'element accesed after it was added #2'
   myDiv.remove()
 
-test "Dom-modules: global variables", ->
+test "global variables", ->
 
   MyModule = module 'MyApp.MyModule', (M) ->
     return
   equal window.MyApp.MyModule, MyModule, "global varible creates"
 
-test "Dom-modules: methods", ->
+test "methods", ->
 
   expect 2
 
@@ -100,7 +100,7 @@ test "Dom-modules: methods", ->
   myInstance = new MyModule $('<div></div>')
   equal myInstance.foo(), 'bar', 'method declared in builder goes to module'
 
-test "Dom-modules: settings", ->
+test "settings", ->
 
   MyModule = module (M) ->
     M.expectSettings 'foo', 'bar'
@@ -117,7 +117,7 @@ test "Dom-modules: settings", ->
   inst_3 = new MyModule myDiv, {foo: 'abc2'}
   deepEqual inst_3.settings, {foo: 'abc2'}, 'settings pased to constructor overvrites data-settings'
 
-test "Dom-modules: initialization (load)", ->
+test "initialization (load)", ->
 
   expect 3
 
@@ -140,7 +140,7 @@ test "Dom-modules: initialization (load)", ->
 
   $(el).remove() for el in elements
 
-test "Dom-modules: DOM events", ->
+test "DOM events", ->
 
   expect 10
 
@@ -193,7 +193,7 @@ test "Dom-modules: DOM events", ->
 
 
 
-test "Dom-modules: global DOM events", ->
+test "global DOM events", ->
 
   expect 12
 
@@ -221,7 +221,7 @@ test "Dom-modules: global DOM events", ->
 
 
 
-test "Dom-modules: jquery-plugin", ->
+test "jquery-plugin", ->
 
   myDiv = $("""
     <div>
@@ -243,7 +243,7 @@ test "Dom-modules: jquery-plugin", ->
   myDiv.remove()
 
 
-test "Dom-modules: module events (local)", ->
+test "module events (local)", ->
 
   expect 3
 
@@ -266,7 +266,7 @@ test "Dom-modules: module events (local)", ->
   myInstance.fire 'event-1', 'abc'
 
 
-test "Dom-modules: module events (global)", ->
+test "module events (global)", ->
 
   expect 3
 
@@ -289,7 +289,7 @@ test "Dom-modules: module events (global)", ->
   myInstance.fire 'event-1', 'abc'
 
 
-test "Dom-modules: module events (syntax sugar)", ->
+test "module events (syntax sugar)", ->
 
   expect 28
 

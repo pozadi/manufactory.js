@@ -1,8 +1,8 @@
 # Util function that helps run some code on particular action (in server-side terms).
 
-# It isn't part of dom-modules, 
+# It isn't part of module-factory, 
 # and can be dropped peacefully in case you don't need it.
-# As well as you can use it without dom-modules.
+# As well as you can use it without module-factory.
 
 # Run some JavaScript only on particular action.
 #   action 'controller_name#action_name', -> ...

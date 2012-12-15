@@ -1,4 +1,4 @@
-*DOM-modules.js* — это библиотека для организации вашего яваскрипта на сайте в 
+*module-factory.js* — это библиотека для организации вашего яваскрипта на сайте в 
 виде модулей. Эта библиотека не умеет подгружать модули по необходимости 
 управлять зависимостями и т.д. Она решает другие задачи.
 
@@ -72,7 +72,7 @@ module 'Todos', (M) ->
 ## Подключение
 
 Для работы библиотеки нужно подключить jQuery 1.8+, [Underscore.js](http://underscorejs.org/) 1.4.3+
-и саму библиотеку (файл [dom-modules.js](https://github.com/pozadi/dom-modules.js/blob/master/dom-modules.js))
+и саму библиотеку (файл [module-factory.js](https://github.com/pozadi/module-factory.js/blob/master/module-factory.js))
 
 ## Создание модуля
 
