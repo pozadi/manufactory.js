@@ -126,19 +126,18 @@ class ModuleInfo
   # `@button a` → `buttonA`
   # `@my-button` → `myButton`
   # `input[type=text]` → `inputTypeText`
+  # `.js-something` → `something`
   #
   # Split to words (delimetr is all not letters and not digits characters) 
   # then join words in mixedCase notation.
   @selectorToName: (selector) ->
-    first = true
-    (for word in selector.split /[^a-z0-9]+/i when word != ''
+    result = _.map selector.split(/[^a-z0-9]+/i), (word) ->
       word = word.toLowerCase()
-      if first
-        first = false
-        word
-      else
-        word.charAt(0).toUpperCase() + word.slice(1)
-    ).join ''
+      word.charAt(0).toUpperCase() + word.slice(1)
+    result = result.join ''
+    result = result.replace /^Js/, ''
+    result.charAt(0).toLowerCase() + result.slice(1)
+
 
   # Add element module interact with
   element: (selector, name=null, dynamic=false, global=false) ->

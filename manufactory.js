@@ -199,27 +199,14 @@
     };
 
     ModuleInfo.selectorToName = function(selector) {
-      var first, word;
-      first = true;
-      return ((function() {
-        var _i, _len, _ref, _results;
-        _ref = selector.split(/[^a-z0-9]+/i);
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          word = _ref[_i];
-          if (!(word !== '')) {
-            continue;
-          }
-          word = word.toLowerCase();
-          if (first) {
-            first = false;
-            _results.push(word);
-          } else {
-            _results.push(word.charAt(0).toUpperCase() + word.slice(1));
-          }
-        }
-        return _results;
-      })()).join('');
+      var result;
+      result = _.map(selector.split(/[^a-z0-9]+/i), function(word) {
+        word = word.toLowerCase();
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      });
+      result = result.join('');
+      result = result.replace(/^Js/, '');
+      return result.charAt(0).toLowerCase() + result.slice(1);
     };
 
     ModuleInfo.prototype.element = function(selector, name, dynamic, global) {

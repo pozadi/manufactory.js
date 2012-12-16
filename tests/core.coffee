@@ -23,6 +23,7 @@ test "elements", ->
         [type=button] 
         ul / items %useless_option%  
           li /  item dynamic
+        .js-something
       body / theBody  global
       body  / global dynamic
     """
@@ -33,6 +34,7 @@ test "elements", ->
     item: {selector: 'li', dynamic: true, global: false}
     theBody: {selector: 'body', dynamic: false, global: true}
     body: {selector: 'body', dynamic: true, global: true}
+    something: {selector: '.js-something', dynamic: false, global: false}
   }, 'M.tree() works (elements)')
   console.log MyModule.ELEMENTS
 
