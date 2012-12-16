@@ -27,14 +27,17 @@
         change itemCheckbox toggleItem
         click clearButton clear
       """
+      # Говорим какие настройки мы ожидаем ...
+      M.expectSettings 'template'
+      # ... и какие будут значения по умолчанию.
+      M.defaultSettings 
+        template: 'todos-item-template'
       M.methods
-        template: _.template """
-          <li class=js-item>
-            <label><input type=checkbox class=js-item-checkbox> <%= text %></label>
-          </li>
-        """
+        # Кстати, `initializer` это новый `constructor`.
         initializer: ->
-          # `initializer` это новый `constructor`.
+          # Мы сказали что ждем настройку `template`,
+          # так что ее взяли из `data-template`, и дали нам в `@settings.template`.
+          @template = _.template $('#' + @settings.template).html()
           @add 'Nothing'
         add: (text) ->
           newItem = $ @template {text}
@@ -71,7 +74,15 @@
 </head>
 <body>
   
-  <div class=js-todos>
+  <script type="text/html" id=todos-item-template2>
+    <li class=js-item>
+      <label><input type=checkbox class=js-item-checkbox> <%= text %></label>
+    </li>
+  </script>
+
+  <!-- По умолчанию используется `#todos-item-template`, 
+       но мы хотим `#todos-item-template2`. Настройки в дейтвии, ха! -->
+  <div class=js-todos data-template=todos-item-template2>
     <h1>ToDo <small class=js-clear-button>Clear completed</small></h1>
     <ol class=js-item-list></ol>
     <form class=js-add-form>
