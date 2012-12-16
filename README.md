@@ -41,23 +41,28 @@ module 'Todos', (M) ->
   """
   # Все события в одном месте, круто!
   M.events """
-    submit addForm add
+    submit addForm onSubmit
     change itemCheckbox toggleItem
     click clearButton clear
   """
   M.methods
     template: _.template """
       <li class=js-item>
-        <input type=checkbox class=js-item-checkbox> <%= text %>
+        <label><input type=checkbox class=js-item-checkbox> <%= text %></label>
       </li>
     """
-    add: ->
-      newItem = $ @template text: @newItemText.val()
+    initializer: ->
+      # `initializer` это новый `constructor`.
+      @add 'Nothing'
+    add: (text) ->
+      newItem = $ @template {text}
       # Мы объявили, что будем работать с элементом `.js-item-list`,
       # и нам дали готовую переменную `@itemList` — магия!
       @itemList.append newItem
+    onSubmit: ->
+      @add @newItemText.val()
       @newItemText.val ''
-      false
+      return false
     toggleItem: (checkbox) ->
       # В обработчике `this` — это ссылка на объект модуля,
       # а то, что раньше было в `this` — элемент, идет первым параметром.
@@ -72,11 +77,7 @@ module 'Todos', (M) ->
 
 <div class=js-todos>
   <h1>ToDo <small class=js-clear-button>Clear completed</small></h1>
-  <ol class=js-item-list>
-    <li class=js-item>
-      <input type=checkbox class=js-item-checkbox> Nothing
-    </li>
-  </ol>
+  <ol class=js-item-list></ol>
   <form class=js-add-form>
     <input type=text placeholder="Good stuff" class=js-new-item-text>
     <input type=submit value=Add>
