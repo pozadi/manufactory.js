@@ -10,33 +10,40 @@
 
   <script type="text/coffeescript">
     module 'Todos', (M) ->
+      # Готовая интсрукция,
+      # что написать в HTML чтобы добавить модуль на страницу:
       M.tree """
-        .todos
-          h1 small / clearButton
-          ol / itemList
-            li / item dynamic
-              [type=checkbox] / itemCheckbox
-          form
-            [type=text] / newItemText
+        .js-todos
+          .js-clear-button
+          .js-item-list
+            .js-item / dynamic
+              .js-item-checkbox
+          .js-add-form
+            .js-new-item-text
       """
+      # Все события в одном месте, круто!
       M.events """
-        submit form add
+        submit addForm add
         change itemCheckbox toggleItem
         click clearButton clear
       """
       M.methods
         template: _.template """
-          <li>
-            <input type=checkbox> <%= text %>
+          <li class=js-item>
+            <input type=checkbox class=js-item-checkbox> <%= text %>
           </li>
         """
         add: ->
           newItem = $ @template text: @newItemText.val()
+          # Мы объявили, что будем работать с элементом `.js-item-list`,
+          # и нам дали готовую переменную `@itemList` — магия!
           @itemList.append newItem
           @newItemText.val ''
           false
         toggleItem: (checkbox) ->
-          item = $(checkbox).parents 'li'
+          # В обработчике `this` — это ссылка на объект модуля,
+          # а то, что раньше было в `this` — элемент, идет первым параметром.
+          item = $(checkbox).parents '.js-item'
           item.toggleClass 'done', $(checkbox).prop 'checked'
         clear: ->
           @item().filter('.done').remove()
@@ -59,15 +66,15 @@
 </head>
 <body>
   
-  <div class=todos>
-    <h1>ToDo <small>Clear completed</small></h1>
-    <ol>
-      <li>
-        <input type=checkbox> Nothing
+  <div class=js-todos>
+    <h1>ToDo <small class=js-clear-button>Clear completed</small></h1>
+    <ol class=js-item-list>
+      <li class=js-item>
+        <input type=checkbox class=js-item-checkbox> Nothing
       </li>
     </ol>
-    <form>
-      <input type=text placeholder="Good stuff">
+    <form class=js-add-form>
+      <input type=text placeholder="Good stuff" class=js-new-item-text>
       <input type=submit value=Add>
     </form>
   </div>
