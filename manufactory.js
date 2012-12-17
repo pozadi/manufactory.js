@@ -398,7 +398,7 @@
     }
   };
 
-  _.extend(jQuery.prototype, {
+  _.extend($.fn, {
     module: function(moduleName) {
       if (this.length) {
         return new __modules[moduleName](this.first());
@@ -430,15 +430,15 @@
     var args;
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
     return $(function() {
-      var a, action, callback, contorller, _i, _len, _ref, _results;
-      _action._currentAction || (_action._currentAction = _action.getCurrentAction());
-      _action._currentController || (_action._currentController = _action.getCurrentController());
+      var a, c, c_a, callback, currentA, currentC, _i, _len, _ref, _results;
+      currentA = (_action._currentAction || (_action._currentAction = _action.getCurrentAction()));
+      currentC = (_action._currentController || (_action._currentController = _action.getCurrentController()));
       callback = args.pop();
       _results = [];
       for (_i = 0, _len = args.length; _i < _len; _i++) {
-        a = args[_i];
-        _ref = a.split('#'), contorller = _ref[0], action = _ref[1];
-        if ((contorller === _action._currentController || !contorller) && (action === _action._currentAction || !action)) {
+        c_a = args[_i];
+        _ref = c_a.split('#'), c = _ref[0], a = _ref[1];
+        if ((c === currentC || !c) && (a === currentA || !a)) {
           callback();
           break;
         } else {

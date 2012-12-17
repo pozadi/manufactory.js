@@ -242,7 +242,7 @@ window.modules =
       @init moduleName, context
 
 
-_.extend jQuery::, {
+_.extend $.fn, {
   module: (moduleName) ->
     if @length
       new __modules[moduleName] @first()
@@ -265,12 +265,12 @@ _.extend jQuery::, {
 #   action 'foo#', '#baz', -> ...
 _action = (args...) ->
   $ ->
-    _action._currentAction or= _action.getCurrentAction()
-    _action._currentController or= _action.getCurrentController()
+    currentA = (_action._currentAction or= _action.getCurrentAction())
+    currentC = (_action._currentController or= _action.getCurrentController())
     callback = args.pop()
-    for a in args
-      [contorller, action] = a.split('#')
-      if (contorller is _action._currentController or !contorller) and (action is _action._currentAction or !action)
+    for c_a in args
+      [c, a] = c_a.split('#')
+      if (c is currentC or !c) and (a is currentA or !a)
         callback()
         break
 
