@@ -259,22 +259,28 @@ _.extend jQuery::, {
 }
 
 
-# Run some JavaScript only on particular action.
+# Run some JavaScript only on particular action and/or controller.
 #   action 'controller_name#action_name', -> ...
 #   action 'foo#bar', 'foo#baz', -> ...
-window.action = (args...) ->
+#   action 'foo#', '#baz', -> ...
+_action = (args...) ->
   $ ->
+    _action._currentAction or= _action.getCurrentAction()
+    _action._currentController or= _action.getCurrentController()
     callback = args.pop()
-    callback() if action.matcher(a.split('#') for a in args)
+    for a in args
+      [contorller, action] = a.split('#')
+      if (contorller is _action._currentController or !contorller) and (action is _action._currentAction or !action)
+        callback()
+        break
 
-# Check if some of listed actions handling now.
-# You can redefine this function.
-#   action.matcher [['controller_name', 'action_name'], [...], ...]
-window.action.matcher = (actions) ->
-  selector = (for a in actions
-    # Suppose you add .controller-foo and .action-bar classes to body on server-side.
-    "body.controller-#{a[0]}.action-#{a[1]}").join ', '
-  $(selector).length > 0
+_action.getCurrentAction = ->
+  $('body').attr('class').match(/action-(\S+)/)?[1]
+
+_action.getCurrentController = ->
+  $('body').attr('class').match(/controller-(\S+)/)?[1]
+
+window.action = _action
 
 
 $(document).newHtml (e) -> window.modules.initAll e.target
