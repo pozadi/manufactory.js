@@ -93,7 +93,7 @@
       dataSettings = _.pick(this.root.data(), EXPECTED_SETTINGS);
       this.settings = _.extend({}, DEFAULT_SETTINGS, dataSettings, settings);
       this.root.data(NAME, this);
-      this._bind();
+      this["__bind"]();
       this.updateTree();
       this.root.newHtml(true, function() {
         return _this.updateTree();
@@ -139,7 +139,7 @@
       return this.settings[name] = value;
     };
 
-    BaseModule.prototype._fixHandler = function(handler) {
+    BaseModule.prototype.__fixHandler = function(handler) {
       if (typeof handler === 'string') {
         handler = this[handler];
       }
@@ -152,20 +152,20 @@
       };
     };
 
-    BaseModule.prototype._bind = function() {
+    BaseModule.prototype["__bind"] = function() {
       var ELEMENTS, EVENTS, MODULE_EVENTS, elementName, eventMeta, eventName, global, handler, moduleName, selector, _i, _j, _len, _len1, _ref, _ref1, _results;
       _ref = this.constructor, ELEMENTS = _ref.ELEMENTS, EVENTS = _ref.EVENTS, MODULE_EVENTS = _ref.MODULE_EVENTS;
       for (_i = 0, _len = EVENTS.length; _i < _len; _i++) {
         eventMeta = EVENTS[_i];
         handler = eventMeta.handler, eventName = eventMeta.eventName, elementName = eventMeta.elementName;
         _ref1 = ELEMENTS[elementName], selector = _ref1.selector, global = _ref1.global;
-        (global ? $(document) : this.root).on(eventName, selector, this._fixHandler(handler));
+        (global ? $(document) : this.root).on(eventName, selector, this.__fixHandler(handler));
       }
       _results = [];
       for (_j = 0, _len1 = MODULE_EVENTS.length; _j < _len1; _j++) {
         eventMeta = MODULE_EVENTS[_j];
         eventName = eventMeta.eventName, moduleName = eventMeta.moduleName, handler = eventMeta.handler;
-        _results.push(__moduleEvents.bindGlobal(eventName, moduleName, this._fixHandler(handler)));
+        _results.push(__moduleEvents.bindGlobal(eventName, moduleName, this.__fixHandler(handler)));
       }
       return _results;
     };

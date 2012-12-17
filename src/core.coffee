@@ -51,7 +51,7 @@ class BaseModule
     dataSettings = _.pick @root.data(), EXPECTED_SETTINGS
     @settings = _.extend {}, DEFAULT_SETTINGS, dataSettings, settings
     @root.data NAME, @
-    @_bind()
+    @__bind()
     @updateTree()
     @root.newHtml true, => @updateTree()
     (__moduleInstances[NAME] or= []).push @
@@ -76,7 +76,7 @@ class BaseModule
   setOption: (name, value) ->
     @settings[name] = value
 
-  _fixHandler: (handler) ->
+  __fixHandler: (handler) ->
     if typeof handler is 'string'
       handler = @[handler]
     handler = _.bind handler, @
@@ -84,7 +84,7 @@ class BaseModule
       args.unshift @
       handler args...
 
-  _bind: ->
+  __bind: ->
     {ELEMENTS, EVENTS, MODULE_EVENTS} = @constructor
     for eventMeta in EVENTS
       {handler, eventName, elementName} = eventMeta
@@ -92,10 +92,10 @@ class BaseModule
       (if global
         $(document) 
       else
-        @root).on eventName, selector, @_fixHandler handler
+        @root).on eventName, selector, @__fixHandler handler
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
-      __moduleEvents.bindGlobal eventName, moduleName, @_fixHandler handler
+      __moduleEvents.bindGlobal eventName, moduleName, @__fixHandler handler
 
 
 class ModuleInfo
