@@ -431,8 +431,8 @@
     args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
     return $(function() {
       var a, c, c_a, callback, currentA, currentC, _i, _len, _ref, _results;
-      currentA = (_action._currentAction || (_action._currentAction = _action.getCurrentAction()));
-      currentC = (_action._currentController || (_action._currentController = _action.getCurrentController()));
+      currentA = (_action.currentAction || (_action.currentAction = _action.getCurrentAction()));
+      currentC = (_action.currentController || (_action.currentController = _action.getCurrentController()));
       callback = args.pop();
       _results = [];
       for (_i = 0, _len = args.length; _i < _len; _i++) {

@@ -265,8 +265,8 @@ _.extend $.fn, {
 #   action 'foo#', '#baz', -> ...
 _action = (args...) ->
   $ ->
-    currentA = (_action._currentAction or= _action.getCurrentAction())
-    currentC = (_action._currentController or= _action.getCurrentController())
+    currentA = (_action.currentAction or= _action.getCurrentAction())
+    currentC = (_action.currentController or= _action.getCurrentController())
     callback = args.pop()
     for c_a in args
       [c, a] = c_a.split('#')
