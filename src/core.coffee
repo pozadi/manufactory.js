@@ -29,7 +29,6 @@ LAMBDA_MODULE = 'LambdaModule'
 
 
 # Utils
-_emptyJQuery = $()
 _whitespace = /\s+/
 _splitToLines =  (str) -> _(str.split '\n').filter (i) -> i != ''
 _notOption = (i) -> i not in [DYNAMIC, GLOBAL]
@@ -89,10 +88,8 @@ class BaseModule
     for eventMeta in EVENTS
       {handler, eventName, elementName} = eventMeta
       {selector, global} = ELEMENTS[elementName]
-      (if global
-        $(document) 
-      else
-        @root).on eventName, selector, @__fixHandler handler
+      (if global then $(document) else @root)
+        .on eventName, selector, @__fixHandler handler
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
       __moduleEvents.bindGlobal eventName, moduleName, @__fixHandler handler
@@ -205,13 +202,10 @@ window.module = (moduleName, builder) ->
   newModule.EXPECTED_SETTINGS = info._expectedSettings
   newModule.AUTO_INIT         = info._autoInit
 
-  for name, element of newModule.ELEMENTS 
-    if element.dynamic
-      do (element) ->
-        newModule::[name] = ->
-          $ element.selector, (if element.global then document else @root)
-    else
-      newModule::[name] = _emptyJQuery
+  for name, element of newModule.ELEMENTS when element.dynamic
+    do (element) ->
+      newModule::[name] = ->
+        $ element.selector, (if element.global then document else @root)
 
   _.extend newModule::, info._methods
 
