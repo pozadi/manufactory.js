@@ -5,18 +5,26 @@ __moduleInstances = {}
 __moduleEvents = {
   _globalHandlers: {}
   trigger: (moduleInstance, eventName, data) ->
-    globalHandlers = @_globalHandlers[moduleInstance.constructor.NAME]?[eventName] or []
-    localHandlers = moduleInstance._eventHandlers?[eventName] or []
-    for handler in _.union localHandlers, globalHandlers
-      handler.call moduleInstance, data, eventName
+    @_globalHandlers[moduleInstance.constructor.NAME]?[eventName]
+      ?.fireWith moduleInstance, [data, eventName]
+    moduleInstance._eventHandlers?[eventName]
+      ?.fireWith moduleInstance, [data, eventName]
   bindGlobal: (eventName, moduleName, handler) ->
-    ((@_globalHandlers[moduleName] or= {})[eventName] or= []).push handler
+    (
+      (
+        @_globalHandlers[moduleName] or= {}
+      )[eventName] or= $.Callbacks()
+    ).add handler
   unbindGlobal: (eventName, moduleName, handler) ->
-    _removeFromArray @_globalHandlers[moduleName]?[eventName], handler
+    @_globalHandlers[moduleName]?[eventName]?.remove handler
   bindLocal: (moduleInstance, eventName, handler) ->
-    ((moduleInstance._eventHandlers or= {})[eventName] or= []).push handler
+    (
+      (
+        moduleInstance._eventHandlers or= {}
+      )[eventName] or= $.Callbacks()
+    ).add handler
   unbindLocal: (moduleInstance, eventName, handler) ->
-    _removeFromArray moduleInstance._eventHandlers?[eventName], handler
+    moduleInstance._eventHandlers?[eventName]?.remove handler
 }
 
 
@@ -33,11 +41,6 @@ _whitespace = /\s+/
 _splitToLines =  (str) -> _(str.split '\n').filter (i) -> i != ''
 _notOption = (i) -> i not in [DYNAMIC, GLOBAL]
 _genLambdaName = -> _.uniqueId LAMBDA_MODULE
-_removeFromArray = (array, item) ->
-  if array and item
-    index = array.indexOf item
-    if index > -1
-      array.splice index, 1
 
 
 # Base module class
