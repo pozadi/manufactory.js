@@ -74,11 +74,13 @@ test "elements", ->
   a = myInstance.typeButton.get()
   b = []
   deepEqual a, b, 'element accesor empty before element added'
-  myDiv.append(button).newHtml(true)
+  myDiv.append(button)
+  myInstance.updateTree()
   a = myInstance.typeButton.get()
   b = button.get()
   deepEqual a, b, 'element accesed after it was added'
-  list.appendTo(myDiv).newHtml(true)
+  list.appendTo(myDiv)
+  myInstance.updateTree()
   a = myInstance.items.get()
   b = list.get()
   deepEqual a, b, 'element accesed after it was added #2'
@@ -136,9 +138,11 @@ test "initialization (load)", ->
         ok true
 
   elements.push(el = $ html)
-  $('body').append(el).newHtml()
+  $('body').append(el)
+  modules.initAll()
 
-  elements.push $(html).appendTo('body').newHtml()
+  elements.push $(html).appendTo('body')
+  modules.initAll()
 
   $(el).remove() for el in elements
 
@@ -185,7 +189,8 @@ test "DOM events", ->
       <a href=#>kick me</a>
     </div>
   """
-  myDiv.appendTo('body').newHtml()
+  myDiv.appendTo('body')
+  modules.initAll()
   myDiv.find('input')
     .trigger('lick', 'abc')
     .trigger('kick')

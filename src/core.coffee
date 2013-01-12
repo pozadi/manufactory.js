@@ -31,8 +31,6 @@ __moduleEvents = {
 # Constants
 DYNAMIC = 'dynamic'
 GLOBAL = 'global'
-NEW_HTML = 'new-html'
-NEW_HTML_FEW = 'new-html-few'
 LAMBDA_MODULE = 'LambdaModule'
 
 
@@ -55,7 +53,6 @@ class BaseModule
     @root.data NAME, @
     @__bind()
     @updateTree()
-    @root.newHtml true, => @updateTree()
     (__moduleInstances[NAME] or= []).push @
     @initializer?()
 
@@ -249,17 +246,4 @@ _.extend $.fn, {
   module: (moduleName) ->
     if @length
       new __modules[moduleName] @first()
-  newHtml: (few=false, callback=null) ->
-    if typeof few is 'function'
-      callback = few
-      few = false
-    if typeof callback is 'function'
-      @on NEW_HTML, callback
-      if few
-        @on NEW_HTML_FEW, callback
-    else
-      @trigger(if few then NEW_HTML_FEW else NEW_HTML)
 }
-
-
-$(document).newHtml (e) -> window.modules.initAll e.target

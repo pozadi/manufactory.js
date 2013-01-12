@@ -380,12 +380,6 @@ instance.someProperty
 
     TODO
 
-## Утилиты
-
-### `$(...).newHtml()`
-
-    TODO
-
 ## API целиком
 
 ### Глобальные функции (`window.`)
@@ -429,4 +423,3 @@ instance.someProperty
 ### Плагины jQuery `$(...).`
  
  * [`.module(moduleName)`](#modulemodulename)
- * [`.newHtml()`](#newhtml)
