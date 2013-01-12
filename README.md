@@ -382,10 +382,6 @@ instance.someProperty
 
 ## Утилиты
 
-### `window.action(actionName, handler)`
-
-    TODO
-
 ### `$(...).newHtml()`
 
     TODO
@@ -395,7 +391,6 @@ instance.someProperty
 ### Глобальные функции (`window.`)
 
  * [`window.module([name], callback)`](#windowmodulename-callback) — создание модуля
- * [`window.action(actionName, handler)`](#windowactionactionname-handler)
 
 ### В конструкторе (`M.`)
 

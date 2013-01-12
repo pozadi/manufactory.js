@@ -4,7 +4,7 @@ sys = require 'sys'
 sources = 'src/core'
 output = 'manufactory'
 
-testsSources = 'tests/core tests/new-html tests/action'
+testsSources = 'tests/core tests/new-html'
 testsOutput = 'tests/js'
 
 run = (comand) ->

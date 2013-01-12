@@ -262,28 +262,4 @@ _.extend $.fn, {
 }
 
 
-# Run some JavaScript only on particular action and/or controller.
-#   action 'controller_name#action_name', -> ...
-#   action 'foo#bar', 'foo#baz', -> ...
-#   action 'foo#', '#baz', -> ...
-_action = (args...) ->
-  $ ->
-    currentA = (_action.currentAction or= _action.getCurrentAction())
-    currentC = (_action.currentController or= _action.getCurrentController())
-    callback = args.pop()
-    for c_a in args
-      [c, a] = c_a.split('#')
-      if (c is currentC or !c) and (a is currentA or !a)
-        callback()
-        break
-
-_action.getCurrentAction = ->
-  $('body').attr('class').match(/action-(\S+)/)?[1]
-
-_action.getCurrentController = ->
-  $('body').attr('class').match(/controller-(\S+)/)?[1]
-
-window.action = _action
-
-
 $(document).newHtml (e) -> window.modules.initAll e.target
