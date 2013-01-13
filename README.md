@@ -21,3 +21,5 @@ style:
   <button class=js-button>show message</button>
 </div>
 ```
+
+[play online](http://jsfiddle.net/MpXtH/)
