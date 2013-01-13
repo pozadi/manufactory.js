@@ -1,33 +1,3 @@
-__modules = {}
-__moduleInstances = {}
-
-# Module events engine
-__moduleEvents = {
-  _globalHandlers: {}
-  trigger: (moduleInstance, eventName, data) ->
-    @_globalHandlers[moduleInstance.constructor.NAME]?[eventName]
-      ?.fireWith moduleInstance, [data, eventName]
-    moduleInstance._eventHandlers?[eventName]
-      ?.fireWith moduleInstance, [data, eventName]
-  bindGlobal: (eventName, moduleName, handler) ->
-    (
-      (
-        @_globalHandlers[moduleName] or= {}
-      )[eventName] or= $.Callbacks()
-    ).add handler
-  unbindGlobal: (eventName, moduleName, handler) ->
-    @_globalHandlers[moduleName]?[eventName]?.remove handler
-  bindLocal: (moduleInstance, eventName, handler) ->
-    (
-      (
-        moduleInstance._eventHandlers or= {}
-      )[eventName] or= $.Callbacks()
-    ).add handler
-  unbindLocal: (moduleInstance, eventName, handler) ->
-    moduleInstance._eventHandlers?[eventName]?.remove handler
-}
-
-
 # Constants
 DYNAMIC = 'dynamic'
 GLOBAL = 'global'
@@ -41,19 +11,46 @@ _notOption = (i) -> i not in [DYNAMIC, GLOBAL]
 _genLambdaName = -> _.uniqueId LAMBDA_MODULE
 
 
+manufactory = window.manufactory = {
+  _modules: {}
+  _instances: {}
+  find: (moduleName) ->
+    @_instances[moduleName] or []
+  on: (eventName, moduleName, callback) ->
+    @_events.bindGlobal eventName, moduleName, callback
+  off:  (eventName, moduleName, callback) ->
+    @_events.unbindGlobal eventName, moduleName, callback
+  init: (moduleName, context = document) ->
+    selector = @_modules[moduleName].ROOT_SELECTOR
+    if selector
+      for el in $(selector, context).add $(context).filter selector
+        new @_modules[moduleName] $ el
+  initAll: (context = document) ->
+    for moduleName, Module of @_modules when Module.AUTO_INIT
+      @init moduleName, context
+}
+
+
+_.extend $.fn, {
+  module: (moduleName) ->
+    if @length
+      new manufactory._modules[moduleName] @first()
+}
+
+
 # Base module class
-class BaseModule
+class manufactory.BaseModule
 
   constructor: (@root, settings) ->
     {EXPECTED_SETTINGS, DEFAULT_SETTINGS, NAME} = @constructor
     if existing = @root.data NAME
       return existing
+    (manufactory._instances[NAME] or= []).push @
+    @root.data NAME, @
     dataSettings = _.pick @root.data(), EXPECTED_SETTINGS
     @settings = _.extend {}, DEFAULT_SETTINGS, dataSettings, settings
-    @root.data NAME, @
     @__bind()
     @updateTree()
-    (__moduleInstances[NAME] or= []).push @
     @initializer?()
 
   updateTree: ->
@@ -64,13 +61,13 @@ class BaseModule
     @root.find args...
 
   on: (eventName, handler) ->
-    __moduleEvents.bindLocal @, eventName, handler
+    manufactory._events.bindLocal @, eventName, handler
 
   off: (eventName, handler) ->
-    __moduleEvents.unbindLocal @, eventName, handler
+    manufactory._events.unbindLocal @, eventName, handler
   
   fire: (eventName, data) ->
-    __moduleEvents.trigger @, eventName, data
+    manufactory._events.trigger @, eventName, data
 
   setOption: (name, value) ->
     @settings[name] = value
@@ -92,10 +89,10 @@ class BaseModule
         .on eventName, selector, @__fixHandler handler
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
-      __moduleEvents.bindGlobal eventName, moduleName, @__fixHandler handler
+      manufactory._events.bindGlobal eventName, moduleName, @__fixHandler handler
 
 
-class ModuleInfo
+class manufactory.ModuleInfo
 
   selectorToName = (selector) ->
     $.camelCase selector
@@ -167,29 +164,29 @@ class ModuleInfo
     @Module.EXPECTED_SETTINGS = _.union @Module.EXPECTED_SETTINGS, _.flatten expectedSettings
 
 
-window.module = (moduleName, builder) ->
+manufactory.module = (moduleName, builder) ->
 
   if builder is undefined
     builder = moduleName
     moduleName = _genLambdaName()
     lambdaModule = true
 
-  newModule = class extends BaseModule
+  newModule = class extends manufactory.BaseModule
 
   newModule.NAME = moduleName
   newModule.LAMBDA = !!lambdaModule
 
-  builder new ModuleInfo newModule
+  builder new manufactory.ModuleInfo newModule
 
   for name, element of newModule.ELEMENTS when element.dynamic
     do (element) ->
       newModule::[name] = ->
         $ element.selector, (if element.global then document else @root)
 
-  __modules[moduleName] = newModule
+  manufactory._modules[moduleName] = newModule
 
   if newModule.AUTO_INIT
-    $ -> window.modules.init newModule.NAME
+    $ -> manufactory.init newModule.NAME
 
   unless lambdaModule
     parts = moduleName.split '.'
@@ -202,25 +199,28 @@ window.module = (moduleName, builder) ->
   return newModule
   
 
-window.modules =
-  find: (moduleName) ->
-    __moduleInstances[moduleName] or []
-  on: (eventName, moduleName, callback) ->
-    __moduleEvents.bindGlobal eventName, moduleName, callback
-  off:  (eventName, moduleName, callback) ->
-    __moduleEvents.unbindGlobal eventName, moduleName, callback
-  init: (moduleName, context = document) ->
-    selector = __modules[moduleName].ROOT_SELECTOR
-    if selector
-      for el in $(selector, context).add $(context).filter selector
-        new __modules[moduleName] $ el
-  initAll: (context = document) ->
-    for moduleName, Module of __modules when Module.AUTO_INIT
-      @init moduleName, context
-
-
-_.extend $.fn, {
-  module: (moduleName) ->
-    if @length
-      new __modules[moduleName] @first()
+# Module events engine
+manufactory._events = {
+  _globalHandlers: {}
+  trigger: (moduleInstance, eventName, data) ->
+    @_globalHandlers[moduleInstance.constructor.NAME]?[eventName]
+      ?.fireWith moduleInstance, [data, eventName]
+    moduleInstance._eventHandlers?[eventName]
+      ?.fireWith moduleInstance, [data, eventName]
+  bindGlobal: (eventName, moduleName, handler) ->
+    (
+      (
+        @_globalHandlers[moduleName] or= {}
+      )[eventName] or= $.Callbacks()
+    ).add handler
+  unbindGlobal: (eventName, moduleName, handler) ->
+    @_globalHandlers[moduleName]?[eventName]?.remove handler
+  bindLocal: (moduleInstance, eventName, handler) ->
+    (
+      (
+        moduleInstance._eventHandlers or= {}
+      )[eventName] or= $.Callbacks()
+    ).add handler
+  unbindLocal: (moduleInstance, eventName, handler) ->
+    moduleInstance._eventHandlers?[eventName]?.remove handler
 }

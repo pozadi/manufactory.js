@@ -1,10 +1,10 @@
 test "elements", ->
 
-  MyModule = module (M) ->
+  MyModule = manufactory.module (M) ->
     M.root '.abc'
   equal MyModule.ROOT_SELECTOR, '.abc', 'M.root() works'
 
-  MyModule = module (M) ->
+  MyModule = manufactory.module (M) ->
     M.element '.abc', 'foo', true
     M.element 'input[name=abc]'
     M.element 'body', null, false, true
@@ -16,7 +16,7 @@ test "elements", ->
     theBody: {selector: 'body', dynamic: true, global: true}
   }, 'M.element() works'
 
-  MyModule = module (M) ->
+  MyModule = manufactory.module (M) ->
     M.tree """
       .abc
 
@@ -87,7 +87,7 @@ test "elements", ->
 
 test "global variables", ->
 
-  MyModule = module 'MyApp.MyModule', (M) ->
+  MyModule = manufactory.module 'MyApp.MyModule', (M) ->
     return
   equal window.MyApp.MyModule, MyModule, "global varible creates"
 
@@ -95,7 +95,7 @@ test "methods", ->
 
   expect 2
 
-  MyModule = module (M) ->
+  MyModule = manufactory.module (M) ->
     M.methods
       initializer: ->
         ok true, 'initializer() calls on instnace creation'
@@ -105,7 +105,7 @@ test "methods", ->
 
 test "settings", ->
 
-  MyModule = module (M) ->
+  MyModule = manufactory.module (M) ->
     M.expectSettings 'foo', 'bar'
 
   myDiv = $('<div data-foo="abc" data-some="abc1"></div>')
@@ -125,12 +125,12 @@ test "initialization (load)", ->
   expect 3
 
   html = """
-    <div class="my-module"></div>
+    <div class="my-module"></div>mo
   """
   elements = []
   elements.push $(html).appendTo('body')
 
-  module (M) ->
+  manufactory.module (M) ->
     M.root '.my-module'
     M.methods
       initializer: -> 
@@ -138,10 +138,10 @@ test "initialization (load)", ->
 
   elements.push(el = $ html)
   $('body').append(el)
-  modules.initAll()
+  manufactory.initAll()
 
   elements.push $(html).appendTo('body')
-  modules.initAll()
+  manufactory.initAll()
 
   $(el).remove() for el in elements
 
@@ -149,7 +149,7 @@ test "DOM events", ->
 
   expect 10
 
-  module (M) ->
+  manufactory.module (M) ->
     M.tree """
       .my-module1
         [type=button]
@@ -189,7 +189,7 @@ test "DOM events", ->
     </div>
   """
   myDiv.appendTo('body')
-  modules.initAll()
+  manufactory.initAll()
   myDiv.find('input')
     .trigger('lick', 'abc')
     .trigger('kick')
@@ -209,7 +209,7 @@ test "global DOM events", ->
       <div class=my-module4 data-a=2></div>
     </div>
   """).appendTo 'body'
-  module (M) ->
+  manufactory.module (M) ->
     M.root '.my-module4'
     M.element 'body', 'theBody', false, true
     M.event 'lick', 'theBody', (element, event, eventData) ->
@@ -237,7 +237,7 @@ test "jquery-plugin", ->
     </div>
   """).appendTo 'body'
   
-  module 'Module1', (M) ->
+  manufactory.module 'Module1', (M) ->
     M.root '.my-module2'
     M.methods
       foo: -> 'bar'
@@ -253,7 +253,7 @@ test "module events (local)", ->
 
   expect 3
 
-  MyModule = module (M) ->
+  MyModule = manufactory.module (M) ->
 
   myInstance = new MyModule $('<div></div>')
 
@@ -276,7 +276,7 @@ test "module events (global)", ->
 
   expect 3
 
-  module 'SuperModule', (M) ->
+  manufactory.module 'SuperModule', (M) ->
 
   myInstance = new SuperModule $('<div></div>')
 
@@ -285,12 +285,12 @@ test "module events (global)", ->
     equal @, myInstance
     equal eventName, 'event-1'
 
-  modules.on 'event-1', 'SuperModule', handler
+  manufactory.on 'event-1', 'SuperModule', handler
 
   myInstance.fire 'event-1', 'abc'
   myInstance.fire 'not-listened-event'
 
-  modules.off 'event-1', 'SuperModule',  handler
+  manufactory.off 'event-1', 'SuperModule',  handler
 
   myInstance.fire 'event-1', 'abc'
 
@@ -301,7 +301,7 @@ test "module events (syntax sugar)", ->
 
   currentAInstance = null
 
-  module 'ModuleA', (M) ->
+  manufactory.module 'ModuleA', (M) ->
 
     M.methods
       initializer: ->
@@ -309,7 +309,7 @@ test "module events (syntax sugar)", ->
       die: ->
         @fire 'die', 'cba'
 
-  module 'ModuleB', (M) ->
+  manufactory.module 'ModuleB', (M) ->
 
     M.moduleEvents """
       born ModuleA onItBorn
