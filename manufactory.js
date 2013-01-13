@@ -152,38 +152,32 @@
   })();
 
   ModuleInfo = (function() {
+    var selectorToName;
 
-    function ModuleInfo() {
-      this._methods = {};
-      this._elements = {};
-      this._events = [];
-      this._moduleEvents = [];
-      this._defaultSettings = {};
-      this._expectedSettings = [];
-      this._autoInit = true;
+    selectorToName = function(selector) {
+      return $.camelCase(selector.replace(/[^a-z0-9]+/ig, '-').replace(/^-/, '').replace(/-$/, '').replace(/^js-/, ''));
+    };
+
+    function ModuleInfo(Module) {
+      this.Module = Module;
+      this.Module.ELEMENTS = {};
+      this.Module.EVENTS = [];
+      this.Module.MODULE_EVENTS = [];
+      this.Module.DEFAULT_SETTINGS = {};
+      this.Module.EXPECTED_SETTINGS = [];
+      this.Module.AUTO_INIT = true;
     }
 
     ModuleInfo.prototype.methods = function(newMethods) {
-      return _.extend(this._methods, newMethods);
+      return _.extend(this.Module.prototype, newMethods);
     };
 
     ModuleInfo.prototype.autoInit = function(value) {
-      return this._autoInit = value;
+      return this.Module.AUTO_INIT = value;
     };
 
     ModuleInfo.prototype.root = function(rootSelector) {
-      return this._rootSelector = rootSelector;
-    };
-
-    ModuleInfo.selectorToName = function(selector) {
-      var result;
-      result = _.map(selector.split(/[^a-z0-9]+/i), function(word) {
-        word = word.toLowerCase();
-        return word.charAt(0).toUpperCase() + word.slice(1);
-      });
-      result = result.join('');
-      result = result.replace(/^Js/, '');
-      return result.charAt(0).toLowerCase() + result.slice(1);
+      return this.Module.ROOT_SELECTOR = rootSelector;
     };
 
     ModuleInfo.prototype.element = function(selector, name, dynamic, global) {
@@ -197,9 +191,9 @@
         global = false;
       }
       if (name === null) {
-        name = this.constructor.selectorToName(selector);
+        name = selectorToName(selector);
       }
-      return this._elements[name] = {
+      return this.Module.ELEMENTS[name] = {
         selector: selector,
         dynamic: dynamic,
         global: global
@@ -222,7 +216,7 @@
     };
 
     ModuleInfo.prototype.event = function(eventName, elementName, handler) {
-      return this._events.push({
+      return this.Module.EVENTS.push({
         elementName: elementName,
         eventName: eventName,
         handler: handler
@@ -242,7 +236,7 @@
     };
 
     ModuleInfo.prototype.moduleEvent = function(eventName, moduleName, handler) {
-      return this._moduleEvents.push({
+      return this.Module.MODULE_EVENTS.push({
         eventName: eventName,
         moduleName: moduleName,
         handler: handler
@@ -262,13 +256,13 @@
     };
 
     ModuleInfo.prototype.defaultSettings = function(newDefaultSettings) {
-      return _.extend(this._defaultSettings, newDefaultSettings);
+      return _.extend(this.Module.DEFAULT_SETTINGS, newDefaultSettings);
     };
 
     ModuleInfo.prototype.expectSettings = function() {
       var expectedSettings;
       expectedSettings = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return this._expectedSettings = _.union(this._expectedSettings, _.flatten(expectedSettings));
+      return this.Module.EXPECTED_SETTINGS = _.union(this.Module.EXPECTED_SETTINGS, _.flatten(expectedSettings));
     };
 
     return ModuleInfo;
@@ -276,14 +270,12 @@
   })();
 
   window.module = function(moduleName, builder) {
-    var currentScope, element, info, lambdaModule, name, newModule, part, parts, theName, _i, _len, _ref;
+    var currentScope, element, lambdaModule, name, newModule, part, parts, theName, _i, _len, _ref;
     if (builder === void 0) {
       builder = moduleName;
       moduleName = _genLambdaName();
       lambdaModule = true;
     }
-    info = new ModuleInfo;
-    builder(info);
     newModule = (function(_super) {
 
       __extends(_Class, _super);
@@ -297,13 +289,7 @@
     })(BaseModule);
     newModule.NAME = moduleName;
     newModule.LAMBDA = !!lambdaModule;
-    newModule.DEFAULT_SETTINGS = info._defaultSettings;
-    newModule.EVENTS = info._events;
-    newModule.MODULE_EVENTS = info._moduleEvents;
-    newModule.ROOT_SELECTOR = info._rootSelector;
-    newModule.ELEMENTS = info._elements;
-    newModule.EXPECTED_SETTINGS = info._expectedSettings;
-    newModule.AUTO_INIT = info._autoInit;
+    builder(new ModuleInfo(newModule));
     _ref = newModule.ELEMENTS;
     for (name in _ref) {
       element = _ref[name];
@@ -315,7 +301,6 @@
         })(element);
       }
     }
-    _.extend(newModule.prototype, info._methods);
     __modules[moduleName] = newModule;
     if (newModule.AUTO_INIT) {
       $(function() {

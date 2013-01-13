@@ -97,50 +97,37 @@ class BaseModule
 
 class ModuleInfo
 
-  constructor: ->
-    @_methods = {}
-    @_elements = {}
-    @_events = []
-    @_moduleEvents = []
-    @_defaultSettings = {}
-    @_expectedSettings = []
-    @_autoInit = true
+  selectorToName = (selector) ->
+    $.camelCase selector
+      .replace(/[^a-z0-9]+/ig, '-')
+      .replace(/^-/, '')
+      .replace(/-$/, '')
+      .replace(/^js-/, '')
+
+  constructor: (@Module) ->
+    @Module.ELEMENTS = {}
+    @Module.EVENTS = []
+    @Module.MODULE_EVENTS = []
+    @Module.DEFAULT_SETTINGS = {}
+    @Module.EXPECTED_SETTINGS = []
+    @Module.AUTO_INIT = true
 
   # Set all module events
   methods: (newMethods) ->
-    _.extend @_methods, newMethods
+    _.extend @Module::, newMethods
 
   autoInit: (value) ->
-    @_autoInit = value
+    @Module.AUTO_INIT = value
 
   # Set root selector
   root: (rootSelector) ->
-    @_rootSelector = rootSelector
-
-  # `div` → `div`  
-  # `@button` → `button`
-  # `.button` → `button`
-  # `@button a` → `buttonA`
-  # `@my-button` → `myButton`
-  # `input[type=text]` → `inputTypeText`
-  # `.js-something` → `something`
-  #
-  # Split to words (delimetr is all not letters and not digits characters) 
-  # then join words in mixedCase notation.
-  @selectorToName: (selector) ->
-    result = _.map selector.split(/[^a-z0-9]+/i), (word) ->
-      word = word.toLowerCase()
-      word.charAt(0).toUpperCase() + word.slice(1)
-    result = result.join ''
-    result = result.replace /^Js/, ''
-    result.charAt(0).toLowerCase() + result.slice(1)
-
+    @Module.ROOT_SELECTOR = rootSelector
 
   # Add element module interact with
   element: (selector, name=null, dynamic=false, global=false) ->
     if name is null
-      name = @constructor.selectorToName selector
-    @_elements[name] = {selector, dynamic, global}
+      name = selectorToName selector
+    @Module.ELEMENTS[name] = {selector, dynamic, global}
 
   # Set root selector and all elements at once
   tree: (treeString) ->
@@ -153,7 +140,7 @@ class ModuleInfo
       @element selector, name, DYNAMIC in options, GLOBAL in options
 
   event: (eventName, elementName, handler) ->
-    @_events.push {elementName, eventName, handler}
+    @Module.EVENTS.push {elementName, eventName, handler}
 
   # Set all DOM events module wants to handle
   events: (eventsString) ->
@@ -163,7 +150,7 @@ class ModuleInfo
       @event eventName, elementName, handlerName
     
   moduleEvent: (eventName, moduleName, handler) ->
-    @_moduleEvents.push {eventName, moduleName, handler}
+    @Module.MODULE_EVENTS.push {eventName, moduleName, handler}
 
   # Set all modules events module wants to handle 
   moduleEvents: (moduleEventsString) ->
@@ -174,10 +161,10 @@ class ModuleInfo
   
   # Set default module settings
   defaultSettings: (newDefaultSettings) ->
-    _.extend @_defaultSettings, newDefaultSettings
+    _.extend @Module.DEFAULT_SETTINGS, newDefaultSettings
 
   expectSettings: (expectedSettings...) ->
-    @_expectedSettings = _.union @_expectedSettings, _.flatten expectedSettings
+    @Module.EXPECTED_SETTINGS = _.union @Module.EXPECTED_SETTINGS, _.flatten expectedSettings
 
 
 window.module = (moduleName, builder) ->
@@ -187,27 +174,17 @@ window.module = (moduleName, builder) ->
     moduleName = _genLambdaName()
     lambdaModule = true
 
-  info = new ModuleInfo
-  builder info
-
   newModule = class extends BaseModule
 
-  newModule.NAME              = moduleName
-  newModule.LAMBDA            = !!lambdaModule
-  newModule.DEFAULT_SETTINGS  = info._defaultSettings
-  newModule.EVENTS            = info._events
-  newModule.MODULE_EVENTS     = info._moduleEvents
-  newModule.ROOT_SELECTOR     = info._rootSelector
-  newModule.ELEMENTS          = info._elements
-  newModule.EXPECTED_SETTINGS = info._expectedSettings
-  newModule.AUTO_INIT         = info._autoInit
+  newModule.NAME = moduleName
+  newModule.LAMBDA = !!lambdaModule
+
+  builder new ModuleInfo newModule
 
   for name, element of newModule.ELEMENTS when element.dynamic
     do (element) ->
       newModule::[name] = ->
         $ element.selector, (if element.global then document else @root)
-
-  _.extend newModule::, info._methods
 
   __modules[moduleName] = newModule
 

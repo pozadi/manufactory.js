@@ -36,7 +36,6 @@ test "elements", ->
     body: {selector: 'body', dynamic: true, global: true}
     something: {selector: '.js-something', dynamic: false, global: false}
   }, 'M.tree() works (elements)')
-  console.log MyModule.ELEMENTS
 
   myDiv = $("""
     <div>
