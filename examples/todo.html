@@ -8,73 +8,236 @@
   <script src="../manufactory.js"></script>
   <script src="http://coffeescript.org/extras/coffee-script.js"></script>
 
+  <style type="text/css">
+    .todos-widget {
+      width: 500px;
+      margin: 0 auto;
+      font-size: 20px;
+      line-height: 1.5;
+    }
+      .item-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+        .todo-item,
+        .add-form {
+          background: #8ee699;
+          padding: 4px 6px;
+        }
+          .todo-item [type=text],
+          .add-form [type=text] {
+            width: 90%;
+            font-size: 20px;
+            padding: 5px 7px;
+          }
+            .remove {
+              float: right;
+            }
+            .todo-item [type=text] {
+              display: none;
+            }
+            .todo-item.edit .remove,
+            .todo-item.edit .text,
+            .todo-item.edit [type=checkbox] {
+              display: none;
+            }
+            .todo-item.edit [type=text] {
+              display: inline;
+            }
+            .todo-item.completed .text {
+              text-decoration: line-through;
+            }
+          .todos-widget.filter-completed .todo-item.active {
+            display: none;
+          }
+          .todos-widget.filter-active .todo-item.completed {
+            display: none;
+          }
+      .footer {
+        background: #63c26f;
+        margin: 0 4px;
+        font-size: 14px;
+        padding: 5px 7px;
+      }
+        .left {
+          float: left;
+        }
+        .clear-completed {
+          float: right;
+        }
+        .footer-menu {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          text-align: center;
+        }
+          .footer-menu li {
+            display: inline;
+          }
+            .todos-widget.filter-all [data-filter=all] {
+              font-weight: bold;
+            }
+            .todos-widget.filter-completed [data-filter=completed] {
+              font-weight: bold;
+            }
+            .todos-widget.filter-active [data-filter=active] {
+              font-weight: bold;
+            }
+  </style>
+
   <script type="text/coffeescript">
+
     manufactory.module 'Todos', (M) ->
+
+      onEnter = (fn) ->
+        (_, e) -> fn.apply(@, arguments) if e.which == 13
+
       M.tree """
-        .js-todos
-          .js-clear-button
-          .js-item-list
-            .js-item / dynamic
-              .js-item-checkbox
-          .js-add-form
-            .js-new-item-text
+        .js-todos-widget
+          .js-toggle-all-checkbox
+          .js-new-item-input
+            .js-item-list
+              .js-todo-item / dynamic
+                .js-toggle-item-checkbox
+                .js-item-text
+                .js-remove-item-button
+                .js-edit-item-field
+          .js-footer
+            .js-left-counter
+            .js-clear-completed-button
+              .js-completed-counter
+            .js-set-filter-button
+          .js-item-template
       """
+
       M.events """
-        submit addForm onSubmit
-        change itemCheckbox toggleItem
-        click clearButton clear
+        change toggleAllCheckbox _toggleAll
+        keyup newItemInput _addItemOnEnter
+        change toggleItemCheckbox _toggleItem
+        dblclick itemText _enterEditMode
+        blur editItemField _saveItem
+        keyup editItemField _saveItemOnEnter
+        click removeItemButton _removeItem
+        click clearCompletedButton _clearCompleted
+        click setFilterButton _setFilter
       """
-      M.expectSettings 'template'
-      M.defaultSettings 
-        template: 'todos-item-template'
+
       M.methods
         initializer: ->
-          @template = _.template $('#' + @settings.template).html()
-          @add 'Nothing'
-        add: (text) ->
-          newItem = $ @template {text}
-          @itemList.append newItem
-        onSubmit: ->
-          @add @newItemText.val()
-          @newItemText.val ''
-          return false
-        toggleItem: (checkbox) ->
-          item = $(checkbox).parents '.js-item'
-          item.toggleClass 'done', $(checkbox).prop 'checked'
-        clear: ->
-          @item().filter('.done').remove()
-  </script>
+          @setFilter 'all'
+          @_updateStats()
 
-  <style type="text/css">
-    h1 small {
-      cursor: pointer;
-      border-bottom: dashed 1px;
-      font-weight: normal;
-      font-size: 50%;
-      vertical-align: middle;
-    }
-    .done {
-      text-decoration: line-through;
-      opacity: .5;
-    }
-  </style>
+        addItem: (text) ->
+          itemEl = $ @itemTemplate.html()
+          @itemList.append itemEl
+          @updateItem itemEl, text
+          @setCompleted itemEl, false
+
+        updateItem: (itemEl, text) ->
+          itemEl.find('.js-item-text').text text
+          itemEl.find('.js-edit-item-field').val text
+
+        setCompleted: (itemEl, completed) ->
+          itemEl
+            .removeClass('active completed')
+            .addClass(if completed then 'completed' else 'active')
+          itemEl.find('.js-toggle-item-checkbox').prop 'checked', completed
+          @_updateStats()
+
+        removeItem: (itemEl) ->
+          itemEl.remove()
+          @_updateStats()
+
+        setFilter: (filter) ->
+          @root
+            .removeClass('filter-completed filter-active filter-all')
+            .addClass "filter-#{filter}"
+
+        _updateStats: ->
+          all = @todoItem().length
+          completed = @todoItem().filter('.completed').length
+          active = all - completed
+          @footer.toggle all > 0
+          @clearCompletedButton.toggle completed > 0
+          @leftCounter.text "#{active} item#{if active == 1 then '' else 's'} left"
+          @completedCounter.text completed
+
+        _toggleAll: ->
+          completed = @toggleAllCheckbox.prop 'checked'
+          for itemEl in @todoItem()
+            @setCompleted $(itemEl), completed
+
+        _addItemOnEnter: onEnter ->
+          @addItem @newItemInput.val()
+          @newItemInput.val ''
+
+        _toggleItem: (checkbox) ->
+          itemEl = $(checkbox).parents '.js-todo-item'
+          @setCompleted itemEl, $(checkbox).prop 'checked'
+
+        _enterEditMode: (textEl) ->
+          itemEl = $(textEl).parents '.js-todo-item'
+          itemEl
+            .addClass('edit')
+            .find('.js-edit-item-field').focus()
+
+        _saveItem: (editField) ->
+          itemEl = $(editField).parents '.js-todo-item'
+          itemEl.removeClass 'edit'
+          @updateItem itemEl, $(editField).val()
+
+        _saveItemOnEnter: onEnter (editField) ->
+          @_saveItem editField
+
+        _removeItem: (removeButton) ->
+          itemEl = $(removeButton).parents '.js-todo-item'
+          @removeItem itemEl
+
+        _clearCompleted: ->
+          for itemEl in @todoItem().filter('.completed')
+            @removeItem $(itemEl)
+
+        _setFilter: (button) ->
+          @setFilter $(button).data 'filter'
+
+  </script>
 
 </head>
 <body>
   
-  <script type="text/html" id=todos-item-template2>
-    <li class=js-item>
-      <label><input type=checkbox class=js-item-checkbox> <%= text %></label>
-    </li>
-  </script>
+  <div class="js-todos-widget todos-widget">
+    <h1>todos</h1>
 
-  <div class=js-todos data-template=todos-item-template2>
-    <h1>ToDo <small class=js-clear-button>Clear completed</small></h1>
-    <ol class=js-item-list></ol>
-    <form class=js-add-form>
-      <input type=text placeholder="Good stuff" class=js-new-item-text>
-      <input type=submit value=Add>
-    </form>
+    <div class="add-form">
+      <input type="checkbox" class="js-toggle-all-checkbox">
+      <input type="text" placeholder="What needs to be done?" class="js-new-item-input">
+    </div>
+
+    <ul class="js-item-list item-list">
+    </ul>
+
+    <div class="footer js-footer">
+      <span class="js-left-counter left"></span>
+
+      <button class="js-clear-completed-button clear-completed">Clear completed 
+        (<span class="js-completed-counter"></span>)</button>
+
+      <ul class="footer-menu">
+        <li><button class="js-set-filter-button" data-filter="all">All</button></li>
+        <li><button class="js-set-filter-button" data-filter="active">Active</button></li>
+        <li><button class="js-set-filter-button" data-filter="completed">Completed</button></li>
+      </ul>
+    </div>
+
+    <script type="text/html" class="js-item-template">
+      <li class="js-todo-item todo-item">
+        <input type="checkbox" class="js-toggle-item-checkbox">
+        <span class="js-item-text text"></span>
+        <button class="js-remove-item-button remove">&times;</button>
+        <input type="text" class="js-edit-item-field">
+      </li>
+    </script>
   </div>
 
 </body>
