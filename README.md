@@ -23,3 +23,5 @@ style:
 ```
 
 [play online](http://jsfiddle.net/MpXtH/)
+
+See also [more complex example](http://jsfiddle.net/Bh3e2/1/)
