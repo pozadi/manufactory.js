@@ -10,8 +10,6 @@
 
   <script type="text/coffeescript">
     manufactory.module 'Todos', (M) ->
-      # Готовая интсрукция,
-      # что написать в HTML чтобы добавить модуль на страницу:
       M.tree """
         .js-todos
           .js-clear-button
@@ -21,36 +19,26 @@
           .js-add-form
             .js-new-item-text
       """
-      # Все события в одном месте, круто!
       M.events """
         submit addForm onSubmit
         change itemCheckbox toggleItem
         click clearButton clear
       """
-      # Говорим какие настройки мы ожидаем ...
       M.expectSettings 'template'
-      # ... и какие будут значения по умолчанию.
       M.defaultSettings 
         template: 'todos-item-template'
       M.methods
-        # Кстати, `initializer` это новый `constructor`.
         initializer: ->
-          # Мы сказали что ждем настройку `template`,
-          # так что ее взяли из `data-template`, и дали нам в `@settings.template`.
           @template = _.template $('#' + @settings.template).html()
           @add 'Nothing'
         add: (text) ->
           newItem = $ @template {text}
-          # Мы объявили, что будем работать с элементом `.js-item-list`,
-          # и нам дали готовую переменную `@itemList` — магия!
           @itemList.append newItem
         onSubmit: ->
           @add @newItemText.val()
           @newItemText.val ''
           return false
         toggleItem: (checkbox) ->
-          # В обработчике `this` — это ссылка на объект модуля,
-          # а то, что раньше было в `this` — элемент, идет первым параметром.
           item = $(checkbox).parents '.js-item'
           item.toggleClass 'done', $(checkbox).prop 'checked'
         clear: ->
@@ -80,8 +68,6 @@
     </li>
   </script>
 
-  <!-- По умолчанию используется `#todos-item-template`, 
-       но мы хотим `#todos-item-template2`. Настройки в дейтвии, ха! -->
   <div class=js-todos data-template=todos-item-template2>
     <h1>ToDo <small class=js-clear-button>Clear completed</small></h1>
     <ol class=js-item-list></ol>
