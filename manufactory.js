@@ -275,10 +275,8 @@
       return _.extend(this.Module.DEFAULT_SETTINGS, newDefaultSettings);
     };
 
-    ModuleInfo.prototype.expectSettings = function() {
-      var expectedSettings;
-      expectedSettings = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return this.Module.EXPECTED_SETTINGS = _.union(this.Module.EXPECTED_SETTINGS, _.flatten(expectedSettings));
+    ModuleInfo.prototype.expectSettings = function(expectedSettings) {
+      return this.Module.EXPECTED_SETTINGS = _.union(this.Module.EXPECTED_SETTINGS, expectedSettings.split(whitespace));
     };
 
     return ModuleInfo;

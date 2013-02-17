@@ -106,11 +106,11 @@ test "methods", ->
 test "settings", ->
 
   MyModule = manufactory.module (M) ->
-    M.expectSettings 'foo', 'bar'
+    M.expectSettings 'foo bar'
 
-  myDiv = $('<div data-foo="abc" data-some="abc1"></div>')
+  myDiv = $('<div data-foo="abc" data-bar="def" data-some="abc1"></div>')
   inst_1 = new MyModule myDiv
-  deepEqual inst_1.settings, {foo: 'abc'}, 'settings grubs from data-*'
+  deepEqual inst_1.settings, {foo: 'abc', bar: 'def'}, 'settings grubs from data-*'
 
   myDiv = $('<div data-foo="abc" data-some="abc1"></div>')
   inst_2 = new MyModule myDiv, {baz: 'abc2'}

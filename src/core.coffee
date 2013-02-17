@@ -159,8 +159,8 @@ class manufactory.ModuleInfo
   defaultSettings: (newDefaultSettings) ->
     _.extend @Module.DEFAULT_SETTINGS, newDefaultSettings
 
-  expectSettings: (expectedSettings...) ->
-    @Module.EXPECTED_SETTINGS = _.union @Module.EXPECTED_SETTINGS, _.flatten expectedSettings
+  expectSettings: (expectedSettings) ->
+    @Module.EXPECTED_SETTINGS = _.union @Module.EXPECTED_SETTINGS, expectedSettings.split whitespace
 
 
 manufactory.module = (moduleName, builder) ->
