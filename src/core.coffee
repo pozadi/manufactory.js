@@ -5,10 +5,9 @@ LAMBDA_MODULE = 'LambdaModule'
 
 
 # Utils
-_whitespace = /\s+/
-_splitToLines =  (str) -> _(str.split '\n').filter (i) -> i != ''
-_notOption = (i) -> i not in [DYNAMIC, GLOBAL]
-_genLambdaName = -> _.uniqueId LAMBDA_MODULE
+whitespace = /\s+/
+splitToLines =  (str) -> _(str.split '\n').filter (i) -> i != ''
+notOption = (i) -> i not in [DYNAMIC, GLOBAL]
 
 
 manufactory = window.manufactory = {
@@ -17,9 +16,9 @@ manufactory = window.manufactory = {
   find: (moduleName) ->
     @_instances[moduleName] or []
   on: (eventName, moduleName, callback) ->
-    @_events.bindGlobal eventName, moduleName, callback
-  off:  (eventName, moduleName, callback) ->
-    @_events.unbindGlobal eventName, moduleName, callback
+    @_events.globalCallbacks(moduleName, eventName).add(callback)
+  off: (eventName, moduleName, callback) ->
+    @_events.globalCallbacks(moduleName, eventName).remove(callback)
   init: (moduleName, context = document) ->
     selector = @_modules[moduleName].ROOT_SELECTOR
     if selector
@@ -61,11 +60,11 @@ class manufactory.BaseModule
     @root.find args...
 
   on: (eventName, handler) ->
-    manufactory._events.bindLocal @, eventName, handler
+    manufactory._events.localCallbacks(@, eventName).add(handler)
 
   off: (eventName, handler) ->
-    manufactory._events.unbindLocal @, eventName, handler
-  
+    manufactory._events.localCallbacks(@, eventName).remove(handler)
+
   fire: (eventName, data) ->
     manufactory._events.trigger @, eventName, data
 
@@ -89,7 +88,7 @@ class manufactory.BaseModule
         .on eventName, selector, @__fixHandler handler
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
-      manufactory._events.bindGlobal eventName, moduleName, @__fixHandler handler
+      manufactory._events.globalCallbacks(moduleName, eventName).add @__fixHandler handler
 
 
 class manufactory.ModuleInfo
@@ -128,12 +127,12 @@ class manufactory.ModuleInfo
 
   # Set root selector and all elements at once
   tree: (treeString) ->
-    lines = _splitToLines treeString
+    lines = splitToLines treeString
     @root lines.shift()
     for line in lines
       [selector, options] = _.map line.split('/'), $.trim
-      options = (options or '').split _whitespace
-      name = _.filter(options, _notOption)[0] or null
+      options = (options or '').split whitespace
+      name = _.filter(options, notOption)[0] or null
       @element selector, name, DYNAMIC in options, GLOBAL in options
 
   event: (eventName, elementName, handler) ->
@@ -141,9 +140,9 @@ class manufactory.ModuleInfo
 
   # Set all DOM events module wants to handle
   events: (eventsString) ->
-    lines = _splitToLines eventsString
+    lines = splitToLines eventsString
     for line in lines
-      [eventName, elementName, handlerName] = line.split _whitespace
+      [eventName, elementName, handlerName] = line.split whitespace
       @event eventName, elementName, handlerName
     
   moduleEvent: (eventName, moduleName, handler) ->
@@ -151,9 +150,9 @@ class manufactory.ModuleInfo
 
   # Set all modules events module wants to handle 
   moduleEvents: (moduleEventsString) ->
-    lines = _splitToLines moduleEventsString
+    lines = splitToLines moduleEventsString
     for line in lines
-      [eventName, moduleName, handlerName] = line.split _whitespace
+      [eventName, moduleName, handlerName] = line.split whitespace
       @moduleEvent eventName, moduleName, handlerName
   
   # Set default module settings
@@ -166,9 +165,12 @@ class manufactory.ModuleInfo
 
 manufactory.module = (moduleName, builder) ->
 
+  # Call with one argument:
+  #   manufactory.module ->
+  #     ...
   if builder is undefined
     builder = moduleName
-    moduleName = _genLambdaName()
+    moduleName = _.uniqueId LAMBDA_MODULE
     lambdaModule = true
 
   newModule = class extends manufactory.BaseModule
@@ -199,28 +201,16 @@ manufactory.module = (moduleName, builder) ->
   return newModule
   
 
-# Module events engine
 manufactory._events = {
   _globalHandlers: {}
   trigger: (moduleInstance, eventName, data) ->
-    @_globalHandlers[moduleInstance.constructor.NAME]?[eventName]
-      ?.fireWith moduleInstance, [data, eventName]
-    moduleInstance._eventHandlers?[eventName]
-      ?.fireWith moduleInstance, [data, eventName]
-  bindGlobal: (eventName, moduleName, handler) ->
-    (
-      (
-        @_globalHandlers[moduleName] or= {}
-      )[eventName] or= $.Callbacks()
-    ).add handler
-  unbindGlobal: (eventName, moduleName, handler) ->
-    @_globalHandlers[moduleName]?[eventName]?.remove handler
-  bindLocal: (moduleInstance, eventName, handler) ->
-    (
-      (
-        moduleInstance._eventHandlers or= {}
-      )[eventName] or= $.Callbacks()
-    ).add handler
-  unbindLocal: (moduleInstance, eventName, handler) ->
-    moduleInstance._eventHandlers?[eventName]?.remove handler
+    for callbacks in [
+      @localCallbacks(moduleInstance, eventName), 
+      @globalCallbacks(moduleInstance.constructor.NAME, eventName)
+    ]
+      callbacks.fireWith moduleInstance, [data, eventName]
+  localCallbacks: (moduleInstance, eventName) ->
+    (moduleInstance.__eventHandlers or= {})[eventName] or= $.Callbacks()
+  globalCallbacks: (moduleName, eventName) ->
+    (@_globalHandlers[moduleName] or= {})[eventName] or= $.Callbacks()
 }
