@@ -37,6 +37,10 @@ _.extend $.fn, {
 }
 
 
+
+
+
+
 # Base module class
 class manufactory.BaseModule
 
@@ -75,8 +79,7 @@ class manufactory.BaseModule
 
   __createDynamicElements: ->
     for name, element of @constructor.ELEMENTS when element.dynamic
-      do (element) =>
-        @el[name] = => @__findElement element
+      @el[name] = @__buildDynamicElement element
 
   __findElement: (element) ->
     $ element.selector, (if element.global then document else @el.root)
@@ -99,6 +102,23 @@ class manufactory.BaseModule
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
       manufactory._events.globalCallbacks(moduleName, eventName).add @__fixHandler handler
+
+  @__dynamicElementMixin:
+    byChild: (child) ->
+      $(child).parents @selector
+    byParent: (parent) ->
+      $(parent).find @selector
+
+  __buildDynamicElement: (element) ->
+    fn = (filter) => 
+      result = @__findElement element
+      if filter
+        result.filter filter
+      else
+        result
+    fn.selector = element.selector
+    return _.extend(fn, @constructor.__dynamicElementMixin)
+
 
 
 class manufactory.ModuleInfo
@@ -191,12 +211,6 @@ manufactory.module = (moduleName, builder) ->
   builder new manufactory.ModuleInfo newModule
 
   manufactory._modules[moduleName] = newModule
-
-  newModule::selectors = {
-    root: newModule.ROOT_SELECTOR
-  }
-  for name, element of newModule.ELEMENTS
-    newModule::selectors[name] = element.selector
 
   if newModule.AUTO_INIT
     $ -> manufactory.init newModule.NAME

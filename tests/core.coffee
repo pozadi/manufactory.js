@@ -340,24 +340,5 @@ test "module events (syntax sugar)", ->
   currentAInstance = moduleA2
   moduleA2.die()
 
-test "@selectors sugar", ->
 
-  MyModule = manufactory.module (M) ->
-    M.tree """
-      .abc
-        .foo
-        .bar / baz
-    """
-
-  myInstance = new MyModule $('<div></div>')
-  deepEqual(myInstance.selectors, {
-    root: '.abc',
-    foo: '.foo',
-    baz: '.bar'
-  }, 'good')
-
-
-
-
-
-
+# TODO: dynamic element helpers

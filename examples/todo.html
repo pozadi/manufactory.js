@@ -95,111 +95,110 @@
 
       M.tree """
         .js-todos-widget
-          .js-toggle-all-checkbox
-          .js-new-item-input
+          .js-all-checkbox
+          .js-new-item
             .js-item-list
-              .js-todo-item / dynamic
-                .js-toggle-item-checkbox
-                .js-item-text
-                .js-remove-item-button
-                .js-edit-item-field
+              .js-todo-item        / dynamic
+                .js-item-checkbox  / dynamic
+                .js-item-text      / dynamic
+                .js-item-remove    / dynamic
+                .js-item-field     / dynamic
           .js-footer
             .js-left-counter
-            .js-clear-completed-button
+            .js-clear-completed
               .js-completed-counter
             .js-set-filter-button
           .js-item-template
       """
 
       M.events """
-        change toggleAllCheckbox _toggleAll
-        keyup newItemInput _addItemOnEnter
-        change toggleItemCheckbox _toggleItem
-        dblclick itemText _enterEditMode
-        blur editItemField _saveItem
-        keyup editItemField _saveItemOnEnter
-        click removeItemButton _removeItem
-        click clearCompletedButton _clearCompleted
-        click setFilterButton _setFilter
+        change    allCheckbox      _toggleAll
+        keyup     newItem          _addItemOnEnter
+        change    itemCheckbox     _toggleItem
+        dblclick  itemText         _enterEditMode
+        blur      itemField        _saveItem
+        keyup     itemField        _saveItemOnEnter
+        click     itemRemove       _removeItem
+        click     clearCompleted   _clearCompleted
+        click     setFilterButton  _setFilter
       """
 
       M.methods
         initializer: ->
-          @setFilter 'all'
+          @itemTpl = @el.itemTemplate.html()
+          @setFilter('all')
           @_updateStats()
 
         addItem: (text) ->
-          itemEl = $ @el.itemTemplate.html()
-          @el.itemList.append itemEl
-          @updateItem itemEl, text
-          @setCompleted itemEl, false
+          todoItem = $(@itemTpl)
+          @el.itemList.append(todoItem)
+          @updateItem(todoItem, text)
+          @setCompleted(todoItem, false)
 
-        updateItem: (itemEl, text) ->
-          itemEl.find(@selectors.itemText).text text
-          itemEl.find(@selectors.editItemField).val text
+        updateItem: (todoItem, text) ->
+          @el.itemText.byParent(todoItem).text text
+          @el.itemField.byParent(todoItem).val text
 
-        setCompleted: (itemEl, completed) ->
-          itemEl
+        setCompleted: (todoItem, completed) ->
+          $(todoItem)
             .removeClass('active completed')
             .addClass(if completed then 'completed' else 'active')
-          itemEl.find(@selectors.toggleItemCheckbox).prop 'checked', completed
+          @el.itemCheckbox.byParent(todoItem).prop 'checked', completed
           @_updateStats()
 
-        removeItem: (itemEl) ->
-          itemEl.remove()
+        removeItem: (todoItem) ->
+          todoItem.remove()
           @_updateStats()
 
         setFilter: (filter) ->
           @el.root
             .removeClass('filter-completed filter-active filter-all')
-            .addClass "filter-#{filter}"
+            .addClass("filter-#{filter}")
 
         _updateStats: ->
-          all = @el.todoItem().length
-          completed = @el.todoItem().filter('.completed').length
-          active = all - completed
-          @el.footer.toggle all > 0
-          @el.clearCompletedButton.toggle completed > 0
-          @el.leftCounter.text "#{active} item#{if active == 1 then '' else 's'} left"
-          @el.completedCounter.text completed
+          [all, completed, active] = [
+            @el.todoItem().length, 
+            @el.todoItem('.completed').length, 
+            all - completed
+          ]
+          @el.footer.toggle(all > 0)
+          @el.clearCompleted.toggle(completed > 0)
+          @el.completedCounter.text(completed)
+          @el.leftCounter.text("#{active} #{if active == 1 then 'item' else 'items'} left")
 
         _toggleAll: ->
-          completed = @el.toggleAllCheckbox.prop 'checked'
-          for itemEl in @el.todoItem()
-            @setCompleted $(itemEl), completed
+          completed = @el.allCheckbox.prop('checked')
+          @setCompleted(todoItem, completed) for todoItem in @el.todoItem()
 
         _addItemOnEnter: onEnter ->
-          @addItem @el.newItemInput.val()
-          @el.newItemInput.val ''
+          @addItem @el.newItem.val()
+          @el.newItem.val('')
 
-        _toggleItem: (checkbox) ->
-          itemEl = $(checkbox).parents @selectors.todoItem
-          @setCompleted itemEl, $(checkbox).prop 'checked'
+        _toggleItem: (itemCheckbox) ->
+          todoItem = @el.todoItem.byChild(itemCheckbox)
+          @setCompleted(todoItem, $(itemCheckbox).prop 'checked')
 
-        _enterEditMode: (textEl) ->
-          itemEl = $(textEl).parents @selectors.todoItem
-          itemEl
-            .addClass('edit')
-            .find(@selectors.editItemField).focus()
+        _enterEditMode: (itemText) ->
+          todoItem = @el.todoItem.byChild(itemText)
+          itemField = @el.itemField.byParent(todoItem)
+          todoItem.addClass('edit')
+          itemField.focus()
 
-        _saveItem: (editField) ->
-          itemEl = $(editField).parents @selectors.todoItem
-          itemEl.removeClass 'edit'
-          @updateItem itemEl, $(editField).val()
+        _saveItem: (itemField) ->
+          todoItem = @el.todoItem.byChild(itemField).removeClass('edit')
+          @updateItem todoItem, $(itemField).val()
 
-        _saveItemOnEnter: onEnter (editField) ->
-          @_saveItem editField
+        _saveItemOnEnter: onEnter (itemField) ->
+          @_saveItem(itemField)
 
-        _removeItem: (removeButton) ->
-          itemEl = $(removeButton).parents @selectors.todoItem
-          @removeItem itemEl
+        _removeItem: (itemRemove) ->
+          @removeItem @el.todoItem.byChild(itemRemove)
 
         _clearCompleted: ->
-          for itemEl in @el.todoItem().filter('.completed')
-            @removeItem $(itemEl)
+          @removeItem(todoItem) for todoItem in @el.todoItem('.completed')
 
-        _setFilter: (button) ->
-          @setFilter $(button).data 'filter'
+        _setFilter: (setFilterButton) ->
+          @setFilter $(setFilterButton).data('filter')
 
   </script>
 
@@ -210,8 +209,8 @@
     <h1>todos</h1>
 
     <div class="add-form">
-      <input type="checkbox" class="js-toggle-all-checkbox">
-      <input type="text" placeholder="What needs to be done?" class="js-new-item-input">
+      <input type="checkbox" class="js-all-checkbox">
+      <input type="text" placeholder="What needs to be done?" class="js-new-item">
     </div>
 
     <ul class="js-item-list item-list">
@@ -220,7 +219,7 @@
     <div class="footer js-footer">
       <span class="js-left-counter left"></span>
 
-      <button class="js-clear-completed-button clear-completed">Clear completed 
+      <button class="js-clear-completed clear-completed">Clear completed 
         (<span class="js-completed-counter"></span>)</button>
 
       <ul class="footer-menu">
@@ -232,10 +231,10 @@
 
     <script type="text/html" class="js-item-template">
       <li class="js-todo-item todo-item">
-        <input type="checkbox" class="js-toggle-item-checkbox">
+        <input type="checkbox" class="js-item-checkbox">
         <span class="js-item-text text"></span>
-        <button class="js-remove-item-button remove">&times;</button>
-        <input type="text" class="js-edit-item-field">
+        <button class="js-item-remove remove">&times;</button>
+        <input type="text" class="js-item-field">
       </li>
     </script>
   </div>

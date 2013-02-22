@@ -136,18 +136,13 @@
     };
 
     BaseModule.prototype.__createDynamicElements = function() {
-      var element, name, _ref, _results,
-        _this = this;
+      var element, name, _ref, _results;
       _ref = this.constructor.ELEMENTS;
       _results = [];
       for (name in _ref) {
         element = _ref[name];
         if (element.dynamic) {
-          _results.push((function(element) {
-            return _this.el[name] = function() {
-              return _this.__findElement(element);
-            };
-          })(element));
+          _results.push(this.el[name] = this.__buildDynamicElement(element));
         }
       }
       return _results;
@@ -186,6 +181,31 @@
         _results.push(manufactory._events.globalCallbacks(moduleName, eventName).add(this.__fixHandler(handler)));
       }
       return _results;
+    };
+
+    BaseModule.__dynamicElementMixin = {
+      byChild: function(child) {
+        return $(child).parents(this.selector);
+      },
+      byParent: function(parent) {
+        return $(parent).find(this.selector);
+      }
+    };
+
+    BaseModule.prototype.__buildDynamicElement = function(element) {
+      var fn,
+        _this = this;
+      fn = function(filter) {
+        var result;
+        result = _this.__findElement(element);
+        if (filter) {
+          return result.filter(filter);
+        } else {
+          return result;
+        }
+      };
+      fn.selector = element.selector;
+      return _.extend(fn, this.constructor.__dynamicElementMixin);
     };
 
     return BaseModule;
@@ -309,7 +329,7 @@
   })();
 
   manufactory.module = function(moduleName, builder) {
-    var currentScope, element, lambdaModule, name, newModule, part, parts, theName, _i, _len, _ref;
+    var currentScope, lambdaModule, newModule, part, parts, theName, _i, _len;
     if (builder === void 0) {
       builder = moduleName;
       moduleName = _.uniqueId(LAMBDA_MODULE);
@@ -330,14 +350,6 @@
     newModule.LAMBDA = !!lambdaModule;
     builder(new manufactory.ModuleInfo(newModule));
     manufactory._modules[moduleName] = newModule;
-    newModule.prototype.selectors = {
-      root: newModule.ROOT_SELECTOR
-    };
-    _ref = newModule.ELEMENTS;
-    for (name in _ref) {
-      element = _ref[name];
-      newModule.prototype.selectors[name] = element.selector;
-    }
     if (newModule.AUTO_INIT) {
       $(function() {
         return manufactory.init(newModule.NAME);
