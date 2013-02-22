@@ -24,4 +24,4 @@ manufactory.module 'MyModule', (M) ->
 
 [play online](http://jsfiddle.net/MpXtH/1/)
 
-See also [more complex example](http://jsfiddle.net/Bh3e2/2/)
+See also [more complex example](http://jsfiddle.net/Bh3e2/6/)

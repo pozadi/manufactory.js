@@ -156,11 +156,9 @@
             .addClass("filter-#{filter}")
 
         _updateStats: ->
-          [all, completed, active] = [
-            @el.todoItem().length, 
-            @el.todoItem('.completed').length, 
-            all - completed
-          ]
+          all = @el.todoItem().length
+          completed = @el.todoItem('.completed').length
+          active = all - completed
           @el.footer.toggle(all > 0)
           @el.clearCompleted.toggle(completed > 0)
           @el.completedCounter.text(completed)
