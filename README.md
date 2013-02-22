@@ -22,6 +22,6 @@ manufactory.module 'MyModule', (M) ->
 </div>
 ```
 
-[play online](http://jsfiddle.net/MpXtH/)
+[play online](http://jsfiddle.net/MpXtH/1/)
 
-See also [more complex example](http://jsfiddle.net/Bh3e2/1/)
+See also [more complex example](http://jsfiddle.net/Bh3e2/2/)
