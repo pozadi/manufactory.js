@@ -81,30 +81,33 @@
 
     function BaseModule(root, settings) {
       var DEFAULT_SETTINGS, EXPECTED_SETTINGS, NAME, dataSettings, existing, _base, _ref;
-      this.root = root;
       _ref = this.constructor, EXPECTED_SETTINGS = _ref.EXPECTED_SETTINGS, DEFAULT_SETTINGS = _ref.DEFAULT_SETTINGS, NAME = _ref.NAME;
-      if (existing = this.root.data(NAME)) {
+      if (existing = root.data(NAME)) {
         return existing;
       }
       ((_base = manufactory._instances)[NAME] || (_base[NAME] = [])).push(this);
-      this.root.data(NAME, this);
-      dataSettings = _.pick(this.root.data(), EXPECTED_SETTINGS);
+      this.el = {
+        root: root
+      };
+      this.el.root.data(NAME, this);
+      dataSettings = _.pick(this.el.root.data(), EXPECTED_SETTINGS);
       this.settings = _.extend({}, DEFAULT_SETTINGS, dataSettings, settings);
       this["__bind"]();
-      this.updateTree();
+      this.__createDynamicElements();
+      this.updateElements();
       if (typeof this.initializer === "function") {
         this.initializer();
       }
     }
 
-    BaseModule.prototype.updateTree = function() {
+    BaseModule.prototype.updateElements = function() {
       var element, name, _ref, _results;
       _ref = this.constructor.ELEMENTS;
       _results = [];
       for (name in _ref) {
         element = _ref[name];
         if (!element.dynamic) {
-          _results.push(this[name] = $(element.selector, (element.global ? document : this.root)));
+          _results.push(this.el[name] = this.__findElement(element));
         }
       }
       return _results;
@@ -113,7 +116,7 @@
     BaseModule.prototype.find = function() {
       var args, _ref;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return (_ref = this.root).find.apply(_ref, args);
+      return (_ref = this.el.root).find.apply(_ref, args);
     };
 
     BaseModule.prototype.on = function(eventName, handler) {
@@ -130,6 +133,28 @@
 
     BaseModule.prototype.setOption = function(name, value) {
       return this.settings[name] = value;
+    };
+
+    BaseModule.prototype.__createDynamicElements = function() {
+      var element, name, _ref, _results,
+        _this = this;
+      _ref = this.constructor.ELEMENTS;
+      _results = [];
+      for (name in _ref) {
+        element = _ref[name];
+        if (element.dynamic) {
+          _results.push((function(element) {
+            return _this.el[name] = function() {
+              return _this.__findElement(element);
+            };
+          })(element));
+        }
+      }
+      return _results;
+    };
+
+    BaseModule.prototype.__findElement = function(element) {
+      return $(element.selector, (element.global ? document : this.el.root));
     };
 
     BaseModule.prototype.__fixHandler = function(handler) {
@@ -152,7 +177,7 @@
         eventMeta = EVENTS[_i];
         handler = eventMeta.handler, eventName = eventMeta.eventName, elementName = eventMeta.elementName;
         _ref1 = ELEMENTS[elementName], selector = _ref1.selector, global = _ref1.global;
-        (global ? $(document) : this.root).on(eventName, selector, this.__fixHandler(handler));
+        (global ? $(document) : this.el.root).on(eventName, selector, this.__fixHandler(handler));
       }
       _results = [];
       for (_j = 0, _len1 = MODULE_EVENTS.length; _j < _len1; _j++) {
@@ -304,18 +329,15 @@
     newModule.NAME = moduleName;
     newModule.LAMBDA = !!lambdaModule;
     builder(new manufactory.ModuleInfo(newModule));
+    manufactory._modules[moduleName] = newModule;
+    newModule.prototype.selectors = {
+      root: newModule.ROOT_SELECTOR
+    };
     _ref = newModule.ELEMENTS;
     for (name in _ref) {
       element = _ref[name];
-      if (element.dynamic) {
-        (function(element) {
-          return newModule.prototype[name] = function() {
-            return $(element.selector, (element.global ? document : this.root));
-          };
-        })(element);
-      }
+      newModule.prototype.selectors[name] = element.selector;
     }
-    manufactory._modules[moduleName] = newModule;
     if (newModule.AUTO_INIT) {
       $(function() {
         return manufactory.init(newModule.NAME);

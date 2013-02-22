@@ -40,24 +40,26 @@ _.extend $.fn, {
 # Base module class
 class manufactory.BaseModule
 
-  constructor: (@root, settings) ->
+  constructor: (root, settings) ->
     {EXPECTED_SETTINGS, DEFAULT_SETTINGS, NAME} = @constructor
-    if existing = @root.data NAME
+    if existing = root.data NAME
       return existing
     (manufactory._instances[NAME] or= []).push @
-    @root.data NAME, @
-    dataSettings = _.pick @root.data(), EXPECTED_SETTINGS
+    @el = {root}
+    @el.root.data NAME, @
+    dataSettings = _.pick @el.root.data(), EXPECTED_SETTINGS
     @settings = _.extend {}, DEFAULT_SETTINGS, dataSettings, settings
     @__bind()
-    @updateTree()
+    @__createDynamicElements()
+    @updateElements()
     @initializer?()
 
-  updateTree: ->
+  updateElements: ->
     for name, element of @constructor.ELEMENTS when not element.dynamic
-      @[name] = $ element.selector, (if element.global then document else @root)
+      @el[name] = @__findElement element
 
   find: (args...) ->
-    @root.find args...
+    @el.root.find args...
 
   on: (eventName, handler) ->
     manufactory._events.localCallbacks(@, eventName).add(handler)
@@ -70,6 +72,14 @@ class manufactory.BaseModule
 
   setOption: (name, value) ->
     @settings[name] = value
+
+  __createDynamicElements: ->
+    for name, element of @constructor.ELEMENTS when element.dynamic
+      do (element) =>
+        @el[name] = => @__findElement element
+
+  __findElement: (element) ->
+    $ element.selector, (if element.global then document else @el.root)
 
   __fixHandler: (handler) ->
     if typeof handler is 'string'
@@ -84,7 +94,7 @@ class manufactory.BaseModule
     for eventMeta in EVENTS
       {handler, eventName, elementName} = eventMeta
       {selector, global} = ELEMENTS[elementName]
-      (if global then $(document) else @root)
+      (if global then $(document) else @el.root)
         .on eventName, selector, @__fixHandler handler
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
@@ -180,12 +190,13 @@ manufactory.module = (moduleName, builder) ->
 
   builder new manufactory.ModuleInfo newModule
 
-  for name, element of newModule.ELEMENTS when element.dynamic
-    do (element) ->
-      newModule::[name] = ->
-        $ element.selector, (if element.global then document else @root)
-
   manufactory._modules[moduleName] = newModule
+
+  newModule::selectors = {
+    root: newModule.ROOT_SELECTOR
+  }
+  for name, element of newModule.ELEMENTS
+    newModule::selectors[name] = element.selector
 
   if newModule.AUTO_INIT
     $ -> manufactory.init newModule.NAME
