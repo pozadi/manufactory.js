@@ -1,7 +1,7 @@
 {exec} = require 'child_process'
 sys = require 'sys'
 
-sources = 'src/core'
+sources = 'src/core src/base-module src/module-info src/jquery-plugins'
 output = 'manufactory'
 
 testsSources = 'tests/core'
