@@ -31,20 +31,32 @@
       return window.TestModuleEmpty = manufactory.module(function(M) {});
     });
     QUnit.testDone(function(details) {
-      var callbacks, callbacksList, name, _i, _j, _len, _len1, _ref;
+      var callbacks, callbacksList, instance, instances, key, key2, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       window.TestModuleA = window.TestModuleB = window.TestModuleEmpty = void 0;
       hiddenDom.empty();
-      manufactory._modules = {};
-      manufactory._instances = {};
       _ref = manufactory.callbacks._global;
-      for (callbacksList = _i = 0, _len = _ref.length; _i < _len; callbacksList = ++_i) {
-        name = _ref[callbacksList];
-        for (_j = 0, _len1 = callbacksList.length; _j < _len1; _j++) {
-          callbacks = callbacksList[_j];
+      for (key in _ref) {
+        callbacksList = _ref[key];
+        for (callbacks = _i = 0, _len = callbacksList.length; _i < _len; callbacks = ++_i) {
+          key2 = callbacksList[callbacks];
           callbacks.disable();
         }
       }
-      return manufactory.callbacks._global = {};
+      manufactory.callbacks._global = {};
+      _ref1 = manufactory._instances;
+      for (key in _ref1) {
+        instances = _ref1[key];
+        for (_j = 0, _len1 = instances.length; _j < _len1; _j++) {
+          instance = instances[_j];
+          _ref2 = instance.__eventHandlers;
+          for (key2 in _ref2) {
+            callbacks = _ref2[key2];
+            callbacks.disable();
+          }
+        }
+      }
+      manufactory._instances = {};
+      return manufactory._modules = {};
     });
     test("global varibles", function() {
       return equal(TestModuleA, window.test.modules.A);

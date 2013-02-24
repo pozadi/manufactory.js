@@ -64,11 +64,16 @@ $ ->
   QUnit.testDone (details) ->
     window.TestModuleA = window.TestModuleB = window.TestModuleEmpty = undefined
     hiddenDom.empty()
-    manufactory._modules = {}
-    manufactory._instances = {}
-    for name, callbacksList in manufactory.callbacks._global
-      callbacks.disable() for callbacks in callbacksList
+    for key, callbacksList of manufactory.callbacks._global
+      for key2, callbacks in callbacksList
+        callbacks.disable()
     manufactory.callbacks._global = {}
+    for key, instances of manufactory._instances
+      for instance in instances
+        for key2, callbacks of instance.__eventHandlers
+          callbacks.disable()
+    manufactory._instances = {}
+    manufactory._modules = {}
 
 
 
