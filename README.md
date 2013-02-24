@@ -21,7 +21,3 @@ manufactory.module 'MyModule', (M) ->
   <button class=js-button>show message</button>
 </div>
 ```
-
-[play online](http://jsfiddle.net/MpXtH/1/)
-
-See also [more complex example](http://jsfiddle.net/Bh3e2/6/)
