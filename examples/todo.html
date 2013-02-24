@@ -98,11 +98,11 @@
           .js-all-checkbox
           .js-new-item
             .js-item-list
-              .js-todo-item        / dynamic
-                .js-item-checkbox  / dynamic
-                .js-item-text      / dynamic
-                .js-item-remove    / dynamic
-                .js-item-field     / dynamic
+              .js-todo-item        
+                .js-item-checkbox  
+                .js-item-text      
+                .js-item-remove    
+                .js-item-field     
           .js-footer
             .js-left-counter
             .js-clear-completed
@@ -125,25 +125,25 @@
 
       M.methods
         initializer: ->
-          @itemTpl = @el.itemTemplate.html()
+          @itemTpl = @$itemTemplate.html()
           @setFilter('all')
           @_updateStats()
 
         addItem: (text) ->
           todoItem = $(@itemTpl)
-          @el.itemList.append(todoItem)
+          @$itemList.append(todoItem)
           @updateItem(todoItem, text)
           @setCompleted(todoItem, false)
 
         updateItem: (todoItem, text) ->
-          @el.itemText.byParent(todoItem).text text
-          @el.itemField.byParent(todoItem).val text
+          @$$itemText.byParent(todoItem).text text
+          @$$itemField.byParent(todoItem).val text
 
         setCompleted: (todoItem, completed) ->
           $(todoItem)
             .removeClass('active completed')
             .addClass(if completed then 'completed' else 'active')
-          @el.itemCheckbox.byParent(todoItem).prop 'checked', completed
+          @$$itemCheckbox.byParent(todoItem).prop 'checked', completed
           @_updateStats()
 
         removeItem: (todoItem) ->
@@ -151,49 +151,49 @@
           @_updateStats()
 
         setFilter: (filter) ->
-          @el.root
+          @$root
             .removeClass('filter-completed filter-active filter-all')
             .addClass("filter-#{filter}")
 
         _updateStats: ->
-          all = @el.todoItem().length
-          completed = @el.todoItem('.completed').length
+          all = @$$todoItem().length
+          completed = @$$todoItem('.completed').length
           active = all - completed
-          @el.footer.toggle(all > 0)
-          @el.clearCompleted.toggle(completed > 0)
-          @el.completedCounter.text(completed)
-          @el.leftCounter.text("#{active} #{if active == 1 then 'item' else 'items'} left")
+          @$footer.toggle(all > 0)
+          @$clearCompleted.toggle(completed > 0)
+          @$completedCounter.text(completed)
+          @$leftCounter.text("#{active} #{if active == 1 then 'item' else 'items'} left")
 
         _toggleAll: ->
-          completed = @el.allCheckbox.prop('checked')
-          @setCompleted(todoItem, completed) for todoItem in @el.todoItem()
+          completed = @$allCheckbox.prop('checked')
+          @setCompleted(todoItem, completed) for todoItem in @$$todoItem()
 
         _addItemOnEnter: onEnter ->
-          @addItem @el.newItem.val()
-          @el.newItem.val('')
+          @addItem @$newItem.val()
+          @$newItem.val('')
 
         _toggleItem: (itemCheckbox) ->
-          todoItem = @el.todoItem.byChild(itemCheckbox)
+          todoItem = @$$todoItem.byChild(itemCheckbox)
           @setCompleted(todoItem, $(itemCheckbox).prop 'checked')
 
         _enterEditMode: (itemText) ->
-          todoItem = @el.todoItem.byChild(itemText)
-          itemField = @el.itemField.byParent(todoItem)
+          todoItem = @$$todoItem.byChild(itemText)
+          itemField = @$$itemField.byParent(todoItem)
           todoItem.addClass('edit')
           itemField.focus()
 
         _saveItem: (itemField) ->
-          todoItem = @el.todoItem.byChild(itemField).removeClass('edit')
+          todoItem = @$$todoItem.byChild(itemField).removeClass('edit')
           @updateItem todoItem, $(itemField).val()
 
         _saveItemOnEnter: onEnter (itemField) ->
           @_saveItem(itemField)
 
         _removeItem: (itemRemove) ->
-          @removeItem @el.todoItem.byChild(itemRemove)
+          @removeItem @$$todoItem.byChild(itemRemove)
 
         _clearCompleted: ->
-          @removeItem(todoItem) for todoItem in @el.todoItem('.completed')
+          @removeItem(todoItem) for todoItem in @$$todoItem('.completed')
 
         _setFilter: (setFilterButton) ->
           @setFilter $(setFilterButton).data('filter')

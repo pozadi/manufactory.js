@@ -1,11 +1,10 @@
 # Constants
-DYNAMIC = 'dynamic'
 GLOBAL = 'global'
 
 # Utils
 whitespace = /\s+/
 splitToLines =  (str) -> _(str.split '\n').filter (i) -> i != ''
-notOption = (i) -> i not in [DYNAMIC, GLOBAL]
+notOption = (i) -> i not in [GLOBAL]
 
 class manufactory.ModuleInfo
 
@@ -35,25 +34,26 @@ class manufactory.ModuleInfo
 
   # Set root selector
   root: (rootSelector) ->
-    @Module.ROOT_SELECTOR = rootSelector
+    @Module.ROOT_SELECTOR = $.trim(rootSelector)
     @
 
   # Add element module interact with
-  element: (selector, name=null, dynamic=false, global=false) ->
+  element: (selector, name=null, global=false) ->
     if name is null
       name = selectorToName selector
-    @Module.ELEMENTS[name] = {selector, dynamic, global}
+    @Module.ELEMENTS[name] = {selector, global}
     @
 
   # Set root selector and all elements at once
   tree: (treeString) ->
     lines = splitToLines treeString
-    @root lines.shift()
+    @root lines.shift()?.split('/')[0]
     for line in lines
       [selector, options] = _.map line.split('/'), $.trim
       options = (options or '').split whitespace
       name = _.filter(options, notOption)[0] or null
-      @element selector, name, DYNAMIC in options, GLOBAL in options
+      if selector
+        @element selector, name, GLOBAL in options
     @
 
   event: (eventName, elementName, handler) ->

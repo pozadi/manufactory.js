@@ -5,20 +5,20 @@ class manufactory.BaseModule
     if existing = root.data NAME
       return existing
     (manufactory._instances[NAME] or= []).push @
-    @el = {root}
-    @el.root.data NAME, @
-    dataSettings = _.pick @el.root.data(), EXPECTED_SETTINGS
+    @root = root
+    @root.data NAME, @
+    dataSettings = _.pick @root.data(), EXPECTED_SETTINGS
     @settings = _.extend {}, DEFAULT_SETTINGS, dataSettings, settings
     @__bind()
     @__createElements()
     @initializer?()
 
   updateElements: ->
-    for name, element of @constructor.ELEMENTS when not element.dynamic
-      @el[name].update()
+    for name, element of @constructor.ELEMENTS
+      @["$#{name}"].update()
 
   find: (args...) ->
-    @el.root.find args...
+    @root.find args...
 
   on: (eventName, handler) ->
     manufactory.callbacks.localCallbacks(@, eventName).add(handler)
@@ -37,15 +37,13 @@ class manufactory.BaseModule
     @
 
   __createElements: ->
+    @$root = @root # alias
     for name, element of @constructor.ELEMENTS
-      if element.dynamic
-        @el[name] = @__buildDynamicElement element
-      else
-        @el[name] = @__findElement element
-    @
+      @["$#{name}"] = @__findElement element
+      @["$$#{name}"] = @__buildDynamicElement element
 
   __findElement: (element) ->
-    $ element.selector, (if element.global then document else @el.root)
+    $ element.selector, (if element.global then document else @root)
 
   __fixHandler: (handler) ->
     if typeof handler is 'string'
@@ -60,7 +58,7 @@ class manufactory.BaseModule
     for eventMeta in EVENTS
       {handler, eventName, elementName} = eventMeta
       {selector, global} = ELEMENTS[elementName]
-      (if global then $(document) else @el.root)
+      (if global then $(document) else @root)
         .on eventName, selector, @__fixHandler handler
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
@@ -77,8 +75,7 @@ class manufactory.BaseModule
     fn = (filter) => 
       result = @__findElement element
       if filter
-        result.filter filter
-      else
-        result
+        result = result.filter filter
+      result
     fn.selector = element.selector
     return _.extend(fn, @constructor.__dynamicElementMixin)
