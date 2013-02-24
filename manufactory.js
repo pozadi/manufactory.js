@@ -13,10 +13,12 @@
       return this._instances[moduleName] || [];
     },
     on: function(eventName, moduleName, callback) {
-      return this._events.globalCallbacks(moduleName, eventName).add(callback);
+      this.callbacks.globalCallbacks(moduleName, eventName).add(callback);
+      return this;
     },
     off: function(eventName, moduleName, callback) {
-      return this._events.globalCallbacks(moduleName, eventName).remove(callback);
+      this.callbacks.globalCallbacks(moduleName, eventName).remove(callback);
+      return this;
     },
     init: function(moduleName, context) {
       var el, selector, _i, _len, _ref, _results;
@@ -32,6 +34,8 @@
           _results.push(new this._modules[moduleName]($(el)));
         }
         return _results;
+      } else {
+        return [];
       }
     },
     initAll: function(context) {
@@ -49,17 +53,16 @@
       }
       return _results;
     },
-    _events: {
-      _globalHandlers: {},
+    callbacks: {
+      _global: {},
       trigger: function(moduleInstance, eventName, data) {
-        var callbacks, _i, _len, _ref, _results;
+        var callbacks, _i, _len, _ref;
         _ref = [this.localCallbacks(moduleInstance, eventName), this.globalCallbacks(moduleInstance.constructor.NAME, eventName)];
-        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           callbacks = _ref[_i];
-          _results.push(callbacks.fireWith(moduleInstance, [data, eventName]));
+          callbacks.fireWith(moduleInstance, [data, eventName]);
         }
-        return _results;
+        return this;
       },
       localCallbacks: function(moduleInstance, eventName) {
         var _base;
@@ -67,14 +70,14 @@
       },
       globalCallbacks: function(moduleName, eventName) {
         var _base, _base1;
-        return (_base = ((_base1 = this._globalHandlers)[moduleName] || (_base1[moduleName] = {})))[eventName] || (_base[eventName] = $.Callbacks());
+        return (_base = ((_base1 = this._global)[moduleName] || (_base1[moduleName] = {})))[eventName] || (_base[eventName] = $.Callbacks());
       }
     }
   };
 
   manufactory.module = function(moduleName, builder) {
     var currentScope, lambdaModule, newModule, part, parts, theName, _i, _len;
-    if (builder === void 0) {
+    if (!builder) {
       builder = moduleName;
       moduleName = _.uniqueId('LambdaModule');
       lambdaModule = true;
@@ -154,34 +157,37 @@
     };
 
     BaseModule.prototype.on = function(eventName, handler) {
-      return manufactory._events.localCallbacks(this, eventName).add(handler);
+      manufactory.callbacks.localCallbacks(this, eventName).add(handler);
+      return this;
     };
 
     BaseModule.prototype.off = function(eventName, handler) {
-      return manufactory._events.localCallbacks(this, eventName).remove(handler);
+      manufactory.callbacks.localCallbacks(this, eventName).remove(handler);
+      return this;
     };
 
     BaseModule.prototype.fire = function(eventName, data) {
-      return manufactory._events.trigger(this, eventName, data);
+      manufactory.callbacks.trigger(this, eventName, data);
+      return this;
     };
 
     BaseModule.prototype.setOption = function(name, value) {
-      return this.settings[name] = value;
+      this.settings[name] = value;
+      return this;
     };
 
     BaseModule.prototype.__createElements = function() {
-      var element, name, _ref, _results;
+      var element, name, _ref;
       _ref = this.constructor.ELEMENTS;
-      _results = [];
       for (name in _ref) {
         element = _ref[name];
         if (element.dynamic) {
-          _results.push(this.el[name] = this.__buildDynamicElement(element));
+          this.el[name] = this.__buildDynamicElement(element);
         } else {
-          _results.push(this.el[name] = this.__findElement(element));
+          this.el[name] = this.__findElement(element);
         }
       }
-      return _results;
+      return this;
     };
 
     BaseModule.prototype.__findElement = function(element) {
@@ -202,7 +208,7 @@
     };
 
     BaseModule.prototype["__bind"] = function() {
-      var ELEMENTS, EVENTS, MODULE_EVENTS, elementName, eventMeta, eventName, global, handler, moduleName, selector, _i, _j, _len, _len1, _ref, _ref1, _results;
+      var ELEMENTS, EVENTS, MODULE_EVENTS, elementName, eventMeta, eventName, global, handler, moduleName, selector, _i, _j, _len, _len1, _ref, _ref1;
       _ref = this.constructor, ELEMENTS = _ref.ELEMENTS, EVENTS = _ref.EVENTS, MODULE_EVENTS = _ref.MODULE_EVENTS;
       for (_i = 0, _len = EVENTS.length; _i < _len; _i++) {
         eventMeta = EVENTS[_i];
@@ -210,13 +216,12 @@
         _ref1 = ELEMENTS[elementName], selector = _ref1.selector, global = _ref1.global;
         (global ? $(document) : this.el.root).on(eventName, selector, this.__fixHandler(handler));
       }
-      _results = [];
       for (_j = 0, _len1 = MODULE_EVENTS.length; _j < _len1; _j++) {
         eventMeta = MODULE_EVENTS[_j];
         eventName = eventMeta.eventName, moduleName = eventMeta.moduleName, handler = eventMeta.handler;
-        _results.push(manufactory._events.globalCallbacks(moduleName, eventName).add(this.__fixHandler(handler)));
+        manufactory.callbacks.globalCallbacks(moduleName, eventName).add(this.__fixHandler(handler));
       }
-      return _results;
+      return this;
     };
 
     BaseModule.__dynamicElementMixin = {
@@ -282,15 +287,18 @@
     }
 
     ModuleInfo.prototype.methods = function(newMethods) {
-      return _.extend(this.Module.prototype, newMethods);
+      _.extend(this.Module.prototype, newMethods);
+      return this;
     };
 
     ModuleInfo.prototype.autoInit = function(value) {
-      return this.Module.AUTO_INIT = value;
+      this.Module.AUTO_INIT = value;
+      return this;
     };
 
     ModuleInfo.prototype.root = function(rootSelector) {
-      return this.Module.ROOT_SELECTOR = rootSelector;
+      this.Module.ROOT_SELECTOR = rootSelector;
+      return this;
     };
 
     ModuleInfo.prototype.element = function(selector, name, dynamic, global) {
@@ -306,74 +314,76 @@
       if (name === null) {
         name = selectorToName(selector);
       }
-      return this.Module.ELEMENTS[name] = {
+      this.Module.ELEMENTS[name] = {
         selector: selector,
         dynamic: dynamic,
         global: global
       };
+      return this;
     };
 
     ModuleInfo.prototype.tree = function(treeString) {
-      var line, lines, name, options, selector, _i, _len, _ref, _results;
+      var line, lines, name, options, selector, _i, _len, _ref;
       lines = splitToLines(treeString);
       this.root(lines.shift());
-      _results = [];
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
         _ref = _.map(line.split('/'), $.trim), selector = _ref[0], options = _ref[1];
         options = (options || '').split(whitespace);
         name = _.filter(options, notOption)[0] || null;
-        _results.push(this.element(selector, name, __indexOf.call(options, DYNAMIC) >= 0, __indexOf.call(options, GLOBAL) >= 0));
+        this.element(selector, name, __indexOf.call(options, DYNAMIC) >= 0, __indexOf.call(options, GLOBAL) >= 0);
       }
-      return _results;
+      return this;
     };
 
     ModuleInfo.prototype.event = function(eventName, elementName, handler) {
-      return this.Module.EVENTS.push({
+      this.Module.EVENTS.push({
         elementName: elementName,
         eventName: eventName,
         handler: handler
       });
+      return this;
     };
 
     ModuleInfo.prototype.events = function(eventsString) {
-      var elementName, eventName, handlerName, line, lines, _i, _len, _ref, _results;
+      var elementName, eventName, handlerName, line, lines, _i, _len, _ref;
       lines = splitToLines(eventsString);
-      _results = [];
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
         _ref = line.split(whitespace), eventName = _ref[0], elementName = _ref[1], handlerName = _ref[2];
-        _results.push(this.event(eventName, elementName, handlerName));
+        this.event(eventName, elementName, handlerName);
       }
-      return _results;
+      return this;
     };
 
     ModuleInfo.prototype.moduleEvent = function(eventName, moduleName, handler) {
-      return this.Module.MODULE_EVENTS.push({
+      this.Module.MODULE_EVENTS.push({
         eventName: eventName,
         moduleName: moduleName,
         handler: handler
       });
+      return this;
     };
 
     ModuleInfo.prototype.moduleEvents = function(moduleEventsString) {
-      var eventName, handlerName, line, lines, moduleName, _i, _len, _ref, _results;
+      var eventName, handlerName, line, lines, moduleName, _i, _len, _ref;
       lines = splitToLines(moduleEventsString);
-      _results = [];
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
         _ref = line.split(whitespace), eventName = _ref[0], moduleName = _ref[1], handlerName = _ref[2];
-        _results.push(this.moduleEvent(eventName, moduleName, handlerName));
+        this.moduleEvent(eventName, moduleName, handlerName);
       }
-      return _results;
+      return this;
     };
 
     ModuleInfo.prototype.defaultSettings = function(newDefaultSettings) {
-      return _.extend(this.Module.DEFAULT_SETTINGS, newDefaultSettings);
+      _.extend(this.Module.DEFAULT_SETTINGS, newDefaultSettings);
+      return this;
     };
 
     ModuleInfo.prototype.expectSettings = function(expectedSettings) {
-      return this.Module.EXPECTED_SETTINGS = _.union(this.Module.EXPECTED_SETTINGS, expectedSettings.split(whitespace));
+      this.Module.EXPECTED_SETTINGS = _.union(this.Module.EXPECTED_SETTINGS, expectedSettings.split(whitespace));
+      return this;
     };
 
     return ModuleInfo;
@@ -387,15 +397,14 @@
       }
     },
     update: function() {
-      var el, _i, _len, _ref, _results;
+      var el, _i, _len, _ref;
       this.splice(0, this.length);
       _ref = $(this.selector, this.context);
-      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         el = _ref[_i];
-        _results.push(this.push(el));
+        this.push(el);
       }
-      return _results;
+      return this;
     }
   });
 

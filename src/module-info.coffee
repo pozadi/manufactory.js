@@ -27,19 +27,23 @@ class manufactory.ModuleInfo
   # Set all module events
   methods: (newMethods) ->
     _.extend @Module::, newMethods
+    @
 
   autoInit: (value) ->
     @Module.AUTO_INIT = value
+    @
 
   # Set root selector
   root: (rootSelector) ->
     @Module.ROOT_SELECTOR = rootSelector
+    @
 
   # Add element module interact with
   element: (selector, name=null, dynamic=false, global=false) ->
     if name is null
       name = selectorToName selector
     @Module.ELEMENTS[name] = {selector, dynamic, global}
+    @
 
   # Set root selector and all elements at once
   tree: (treeString) ->
@@ -50,9 +54,11 @@ class manufactory.ModuleInfo
       options = (options or '').split whitespace
       name = _.filter(options, notOption)[0] or null
       @element selector, name, DYNAMIC in options, GLOBAL in options
+    @
 
   event: (eventName, elementName, handler) ->
     @Module.EVENTS.push {elementName, eventName, handler}
+    @
 
   # Set all DOM events module wants to handle
   events: (eventsString) ->
@@ -60,9 +66,11 @@ class manufactory.ModuleInfo
     for line in lines
       [eventName, elementName, handlerName] = line.split whitespace
       @event eventName, elementName, handlerName
+    @
     
   moduleEvent: (eventName, moduleName, handler) ->
     @Module.MODULE_EVENTS.push {eventName, moduleName, handler}
+    @
 
   # Set all modules events module wants to handle 
   moduleEvents: (moduleEventsString) ->
@@ -70,10 +78,13 @@ class manufactory.ModuleInfo
     for line in lines
       [eventName, moduleName, handlerName] = line.split whitespace
       @moduleEvent eventName, moduleName, handlerName
+    @
   
   # Set default module settings
   defaultSettings: (newDefaultSettings) ->
     _.extend @Module.DEFAULT_SETTINGS, newDefaultSettings
+    @
 
   expectSettings: (expectedSettings) ->
     @Module.EXPECTED_SETTINGS = _.union @Module.EXPECTED_SETTINGS, expectedSettings.split whitespace
+    @

@@ -4,29 +4,34 @@ window.manufactory =
   find: (moduleName) ->
     @_instances[moduleName] or []
   on: (eventName, moduleName, callback) ->
-    @_events.globalCallbacks(moduleName, eventName).add(callback)
+    @callbacks.globalCallbacks(moduleName, eventName).add(callback)
+    @
   off: (eventName, moduleName, callback) ->
-    @_events.globalCallbacks(moduleName, eventName).remove(callback)
+    @callbacks.globalCallbacks(moduleName, eventName).remove(callback)
+    @
   init: (moduleName, context = document) ->
     selector = @_modules[moduleName].ROOT_SELECTOR
     if selector
       for el in $(selector, context).add $(context).filter selector
         new @_modules[moduleName] $ el
+    else
+      []
   initAll: (context = document) ->
     for moduleName, Module of @_modules when Module.AUTO_INIT
       @init moduleName, context
-  _events:
-    _globalHandlers: {}
+  callbacks:
+    _global: {}
     trigger: (moduleInstance, eventName, data) ->
       for callbacks in [
         @localCallbacks(moduleInstance, eventName), 
         @globalCallbacks(moduleInstance.constructor.NAME, eventName)
       ]
         callbacks.fireWith moduleInstance, [data, eventName]
+      @
     localCallbacks: (moduleInstance, eventName) ->
       (moduleInstance.__eventHandlers or= {})[eventName] or= $.Callbacks()
     globalCallbacks: (moduleName, eventName) ->
-      (@_globalHandlers[moduleName] or= {})[eventName] or= $.Callbacks()
+      (@_global[moduleName] or= {})[eventName] or= $.Callbacks()
 
 
 manufactory.module = (moduleName, builder) ->
@@ -34,7 +39,7 @@ manufactory.module = (moduleName, builder) ->
   # Call with one argument:
   #   manufactory.module ->
   #     ...
-  if builder is undefined
+  unless builder
     builder = moduleName
     moduleName = _.uniqueId 'LambdaModule'
     lambdaModule = true
@@ -44,7 +49,7 @@ manufactory.module = (moduleName, builder) ->
   newModule.NAME = moduleName
   newModule.LAMBDA = !!lambdaModule
 
-  builder new manufactory.ModuleInfo newModule
+  builder(new manufactory.ModuleInfo newModule)
 
   manufactory._modules[moduleName] = newModule
 

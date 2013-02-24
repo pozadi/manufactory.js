@@ -5,4 +5,5 @@ _.extend $.fn, {
   update: ->
     @splice 0, @length
     @push el for el in $(@selector, @context)
+    @
 }

@@ -21,16 +21,20 @@ class manufactory.BaseModule
     @el.root.find args...
 
   on: (eventName, handler) ->
-    manufactory._events.localCallbacks(@, eventName).add(handler)
+    manufactory.callbacks.localCallbacks(@, eventName).add(handler)
+    @
 
   off: (eventName, handler) ->
-    manufactory._events.localCallbacks(@, eventName).remove(handler)
+    manufactory.callbacks.localCallbacks(@, eventName).remove(handler)
+    @
 
   fire: (eventName, data) ->
-    manufactory._events.trigger @, eventName, data
+    manufactory.callbacks.trigger @, eventName, data
+    @
 
   setOption: (name, value) ->
     @settings[name] = value
+    @
 
   __createElements: ->
     for name, element of @constructor.ELEMENTS
@@ -38,6 +42,7 @@ class manufactory.BaseModule
         @el[name] = @__buildDynamicElement element
       else
         @el[name] = @__findElement element
+    @
 
   __findElement: (element) ->
     $ element.selector, (if element.global then document else @el.root)
@@ -59,7 +64,8 @@ class manufactory.BaseModule
         .on eventName, selector, @__fixHandler handler
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
-      manufactory._events.globalCallbacks(moduleName, eventName).add @__fixHandler handler
+      manufactory.callbacks.globalCallbacks(moduleName, eventName).add @__fixHandler handler
+    @
 
   @__dynamicElementMixin:
     byChild: (child) ->
