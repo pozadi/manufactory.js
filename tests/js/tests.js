@@ -9,7 +9,20 @@
     QUnit.testStart(function(details) {
       $('<div>').html(moduleAHtmlAll).appendTo(hiddenDom);
       window.TestModuleA = manufactory.module('test.modules.A', function(M) {
-        return M.tree("    .js-module    / foo bar static    dynamic  global /\n\n      button, [type=button]/ allButtons !@#$%^&*()\_+±   \n      input[type=text] \n\n      / withEmptySelector\n\n      // comment\n      .js-some-div-  \n      .js-some-div- .child    // comment\n\n      .-global-div /global / Приве†\n* / all");
+        M.tree("    .js-module    / foo bar static    dynamic  global /\n\n      button, [type=button]/ allButtons !@#$%^&*()\_+±   \n      input[type=text] \n\n      / withEmptySelector\n\n      // comment\n      .js-some-div-  \n      .js-some-div- .child    // comment\n\n      .-global-div /global / Приве†\n* / all");
+        M.expectSettings('foo bar');
+        M.defaultSettings({
+          foo: 'default foo',
+          bar: 'default bar'
+        });
+        return M.methods({
+          initializer: function() {
+            return this.message = 'hello';
+          },
+          getMessage: function() {
+            return this.message;
+          }
+        });
       });
       window.TestModuleB = manufactory.module(function(Module) {
         Module.root('.js-module').element('button, [type=button]', 'allButtons').element('input[type=text]').element('.js-some-div-').element('.js-some-div- .child').element('.-global-div', null, true).element('*', 'all');
@@ -73,13 +86,63 @@
         }
       });
     });
-    return test("@$elements", function() {
+    test("@root, @$element, @$$element", function() {
       var obj, root;
       root = $(moduleAHtmlOne);
       obj = new TestModuleA(root);
+      deepEqual(root.get(), obj.root.get());
       deepEqual(root.find('button, [type=button]').get(), obj.$allButtons.get());
       return deepEqual($('.-global-div').get(), obj.$globalDiv.get());
     });
+    test("methods", function() {
+      return equal((new TestModuleA($([]))).getMessage(), 'hello');
+    });
+    return test("settings", function() {
+      deepEqual((new TestModuleA($('<div>'))).settings, TestModuleA.DEFAULT_SETTINGS);
+      deepEqual((new TestModuleA($('<div data-baz="baz">'))).settings, TestModuleA.DEFAULT_SETTINGS);
+      deepEqual((new TestModuleA($('<div data-foo="foo">'))).settings, {
+        foo: 'foo',
+        bar: 'default bar'
+      });
+      deepEqual((new TestModuleA($('<div data-foo="foo" data-bar="bar" data-baz="baz">'))).settings, {
+        foo: 'foo',
+        bar: 'bar'
+      });
+      deepEqual((new TestModuleA($('<div>'), {
+        foo: 'foo',
+        baz: 'baz'
+      })).settings, {
+        foo: 'foo',
+        bar: 'default bar',
+        baz: 'baz'
+      });
+      return deepEqual((new TestModuleA($('<div data-foo="foo" data-bar="bar">'), {
+        bar: 'bar1'
+      })).settings, {
+        foo: 'foo',
+        bar: 'bar1'
+      });
+    });
+    /* TODO:
+      @find()
+      @updateElements()
+      manufactory.initAll()
+      manufactory.init()
+      DOM events (local/global)
+        M.events()
+        M.event()
+        triggering itself
+        handler arguments
+      module events (local/global)
+        @on(), @off(), @fire()
+        manufactory.on(), manufactory.off()
+        M.moduleEvents()
+        triggering itself
+        handler arguments
+      $.fn.module()
+      $.fn.update()
+    */
+
   });
 
 }).call(this);

@@ -38,6 +38,15 @@ $ ->
           .-global-div /global / Приве†
     * / all
       """
+      M.expectSettings 'foo bar'
+      M.defaultSettings 
+        foo: 'default foo'
+        bar: 'default bar'
+      M.methods
+        initializer: ->
+          @message = 'hello'
+        getMessage: ->
+          @message
     window.TestModuleB = manufactory.module (Module) ->
       Module
         .root('.js-module')
@@ -85,10 +94,54 @@ $ ->
       all:           {selector: '*',                     global: false}
     }
 
-  test "@$elements", ->
+  test "@root, @$element, @$$element", ->
     root = $ moduleAHtmlOne
     obj = new TestModuleA root
+    deepEqual root.get(), obj.root.get()
     deepEqual root.find('button, [type=button]').get(), obj.$allButtons.get()
     deepEqual $('.-global-div').get(), obj.$globalDiv.get()
+    #TODO @$$element
 
+  test "methods", ->
+    equal (new TestModuleA $ []).getMessage(), 'hello'
 
+  test "settings", ->
+    deepEqual (new TestModuleA $ '<div>').settings, TestModuleA.DEFAULT_SETTINGS
+    deepEqual (new TestModuleA $ '<div data-baz="baz">').settings, TestModuleA.DEFAULT_SETTINGS
+    deepEqual (new TestModuleA $ '<div data-foo="foo">').settings, {
+      foo: 'foo',
+      bar: 'default bar'
+    }
+    deepEqual (new TestModuleA $ '<div data-foo="foo" data-bar="bar" data-baz="baz">').settings, {
+      foo: 'foo',
+      bar: 'bar'
+    }
+    deepEqual (new TestModuleA $('<div>'), {foo: 'foo', baz: 'baz'}).settings, {
+      foo: 'foo',
+      bar: 'default bar',
+      baz: 'baz'
+    }
+    deepEqual (new TestModuleA $('<div data-foo="foo" data-bar="bar">'), {bar: 'bar1'}).settings, {
+      foo: 'foo',
+      bar: 'bar1'
+    }
+
+  ### TODO:
+    @find()
+    @updateElements()
+    manufactory.initAll()
+    manufactory.init()
+    DOM events (local/global)
+      M.events()
+      M.event()
+      triggering itself
+      handler arguments
+    module events (local/global)
+      @on(), @off(), @fire()
+      manufactory.on(), manufactory.off()
+      M.moduleEvents()
+      triggering itself
+      handler arguments
+    $.fn.module()
+    $.fn.update()
+  ###
