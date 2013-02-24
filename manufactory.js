@@ -126,7 +126,7 @@
       ((_base = manufactory._instances)[NAME] || (_base[NAME] = [])).push(this);
       this.root = root;
       this.root.data(NAME, this);
-      dataSettings = _.pick(this.root.data(), EXPECTED_SETTINGS);
+      dataSettings = _.pick(this.root.data() || {}, EXPECTED_SETTINGS);
       this.settings = _.extend({}, DEFAULT_SETTINGS, dataSettings, settings);
       this["__bind"]();
       this.__createElements();
@@ -229,15 +229,13 @@
     };
 
     BaseModule.prototype.__buildDynamicElement = function(element) {
-      var fn,
-        _this = this;
+      var fn;
       fn = function(filter) {
-        var result;
-        result = _this.__findElement(element);
         if (filter) {
-          result = result.filter(filter);
+          return this.__findElement(element).filter(filter);
+        } else {
+          return this.__findElement(element);
         }
-        return result;
       };
       fn.selector = element.selector;
       return _.extend(fn, this.constructor.__dynamicElementMixin);

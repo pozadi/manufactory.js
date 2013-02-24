@@ -177,10 +177,8 @@
           @setCompleted(todoItem, $(itemCheckbox).prop 'checked')
 
         _enterEditMode: (itemText) ->
-          todoItem = @$$todoItem.byChild(itemText)
-          itemField = @$$itemField.byParent(todoItem)
-          todoItem.addClass('edit')
-          itemField.focus()
+          todoItem = @$$todoItem.byChild(itemText).addClass('edit')
+          @$$itemField.byParent(todoItem).focus()
 
         _saveItem: (itemField) ->
           todoItem = @$$todoItem.byChild(itemField).removeClass('edit')

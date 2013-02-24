@@ -7,7 +7,7 @@ class manufactory.BaseModule
     (manufactory._instances[NAME] or= []).push @
     @root = root
     @root.data NAME, @
-    dataSettings = _.pick @root.data(), EXPECTED_SETTINGS
+    dataSettings = _.pick (@root.data() or {}), EXPECTED_SETTINGS
     @settings = _.extend {}, DEFAULT_SETTINGS, dataSettings, settings
     @__bind()
     @__createElements()
@@ -72,10 +72,10 @@ class manufactory.BaseModule
       $(parent).find @selector
 
   __buildDynamicElement: (element) ->
-    fn = (filter) => 
-      result = @__findElement element
+    fn = (filter) ->
       if filter
-        result = result.filter filter
-      result
+        @__findElement(element).filter(filter)
+      else
+        @__findElement(element)
     fn.selector = element.selector
-    return _.extend(fn, @constructor.__dynamicElementMixin)
+    _.extend(fn, @constructor.__dynamicElementMixin)
