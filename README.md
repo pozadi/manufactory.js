@@ -1,3 +1,5 @@
+[![browser support](http://ci.testling.com/pozadi/manufactory.js.png)](http://ci.testling.com/pozadi/manufactory.js)
+
 *manufactory.js* is a small framework that allows you to create modules in such 
 style:
 
@@ -21,5 +23,3 @@ manufactory.module 'MyModule', (M) ->
   <button class=js-button>show message</button>
 </div>
 ```
-
-test
