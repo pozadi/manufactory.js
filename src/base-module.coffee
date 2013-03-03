@@ -9,8 +9,8 @@ class manufactory.BaseModule
     @root.data NAME, @
     dataSettings = _.pick (@root.data() or {}), EXPECTED_SETTINGS
     @settings = _.extend {}, DEFAULT_SETTINGS, dataSettings, settings
-    @__bind()
     @__createElements()
+    @__bind()
     @initializer?()
 
   updateElements: ->
@@ -57,9 +57,10 @@ class manufactory.BaseModule
     {ELEMENTS, EVENTS, MODULE_EVENTS} = @constructor
     for eventMeta in EVENTS
       {handler, eventName, elementName} = eventMeta
-      {selector, global} = ELEMENTS[elementName]
-      (if global then $(document) else @root)
-        .on eventName, selector, @__fixHandler handler
+      (if !elementName or elementName is 'root' 
+        @root
+      else 
+        @["$$#{elementName}"]).on eventName, @__fixHandler handler
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
       manufactory.callbacks.globalCallbacks(moduleName, eventName).add @__fixHandler handler

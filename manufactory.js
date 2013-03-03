@@ -128,8 +128,8 @@
       this.root.data(NAME, this);
       dataSettings = _.pick(this.root.data() || {}, EXPECTED_SETTINGS);
       this.settings = _.extend({}, DEFAULT_SETTINGS, dataSettings, settings);
-      this["__bind"]();
       this.__createElements();
+      this["__bind"]();
       if (typeof this.initializer === "function") {
         this.initializer();
       }
@@ -203,13 +203,12 @@
     };
 
     BaseModule.prototype["__bind"] = function() {
-      var ELEMENTS, EVENTS, MODULE_EVENTS, elementName, eventMeta, eventName, global, handler, moduleName, selector, _i, _j, _len, _len1, _ref, _ref1;
+      var ELEMENTS, EVENTS, MODULE_EVENTS, elementName, eventMeta, eventName, handler, moduleName, _i, _j, _len, _len1, _ref;
       _ref = this.constructor, ELEMENTS = _ref.ELEMENTS, EVENTS = _ref.EVENTS, MODULE_EVENTS = _ref.MODULE_EVENTS;
       for (_i = 0, _len = EVENTS.length; _i < _len; _i++) {
         eventMeta = EVENTS[_i];
         handler = eventMeta.handler, eventName = eventMeta.eventName, elementName = eventMeta.elementName;
-        _ref1 = ELEMENTS[elementName], selector = _ref1.selector, global = _ref1.global;
-        (global ? $(document) : this.root).on(eventName, selector, this.__fixHandler(handler));
+        (!elementName || elementName === 'root' ? this.root : this["$$" + elementName]).on(eventName, this.__fixHandler(handler));
       }
       for (_j = 0, _len1 = MODULE_EVENTS.length; _j < _len1; _j++) {
         eventMeta = MODULE_EVENTS[_j];
@@ -343,6 +342,10 @@
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
         _ref = line.split(whitespace), eventName = _ref[0], elementName = _ref[1], handlerName = _ref[2];
+        if (!(handlerName != null)) {
+          handlerName = elementName;
+          elementName = 'root';
+        }
         this.event(eventName, elementName, handlerName);
       }
       return this;
