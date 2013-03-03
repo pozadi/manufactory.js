@@ -113,7 +113,7 @@
     test("methods", function() {
       return equal((new TestModuleA($([]))).getMessage(), 'hello');
     });
-    test("settings", function() {
+    return test("settings", function() {
       deepEqual((new TestModuleA($('<div>'))).settings, TestModuleA.DEFAULT_SETTINGS);
       deepEqual((new TestModuleA($('<div data-baz="baz">'))).settings, TestModuleA.DEFAULT_SETTINGS);
       deepEqual((new TestModuleA($('<div data-foo="foo">'))).settings, {
@@ -138,9 +138,6 @@
         foo: 'foo',
         bar: 'bar1'
       });
-    });
-    return test("fail", function() {
-      return equal(1, 2);
     });
     /* TODO:
       @find()
