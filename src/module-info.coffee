@@ -89,5 +89,6 @@ class manufactory.ModuleInfo
     @
 
   expectSettings: (expectedSettings) ->
-    @Module.EXPECTED_SETTINGS = _.union @Module.EXPECTED_SETTINGS, expectedSettings.split whitespace
+    @Module.EXPECTED_SETTINGS = 
+      _.union @Module.EXPECTED_SETTINGS, expectedSettings.split whitespace
     @

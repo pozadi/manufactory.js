@@ -63,7 +63,8 @@ class manufactory.BaseModule
         @["$$#{elementName}"]).on eventName, @__fixHandler handler
     for eventMeta in MODULE_EVENTS
       {eventName, moduleName, handler} = eventMeta
-      manufactory.callbacks.globalCallbacks(moduleName, eventName).add @__fixHandler handler
+      manufactory.callbacks
+        .globalCallbacks(moduleName, eventName).add @__fixHandler handler
     @
 
   @__dynamicElementMixin:

@@ -36,7 +36,7 @@ window.manufactory =
 
 manufactory.module = (moduleName, builder) ->
 
-  # Call with one argument:
+  # Called with one argument:
   #   manufactory.module ->
   #     ...
   unless builder
