@@ -1,6 +1,5 @@
-[![browser support](http://ci.testling.com/pozadi/manufactory.js.png#please)](http://ci.testling.com/pozadi/manufactory.js)
 
-*manufactory.js* is a small framework that allows you to create modules in such 
+*Manufactory.js* is a small framework that allows you to create modules in such 
 style:
 
 ```coffeescript
@@ -23,3 +22,5 @@ manufactory.module 'MyModule', (M) ->
   <button class=js-button>show message</button>
 </div>
 ```
+
+[Browser support](http://ci.testling.com/pozadi/manufactory.js)
