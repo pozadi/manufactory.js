@@ -21,3 +21,5 @@ manufactory.module 'MyModule', (M) ->
   <button class=js-button>show message</button>
 </div>
 ```
+
+test
