@@ -1,4 +1,4 @@
-[![browser support](http://ci.testling.com/pozadi/manufactory.js.png)](http://ci.testling.com/pozadi/manufactory.js)
+[![browser support](http://ci.testling.com/pozadi/manufactory.js.png?cache=off)](http://ci.testling.com/pozadi/manufactory.js)
 
 *manufactory.js* is a small framework that allows you to create modules in such 
 style:
