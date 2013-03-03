@@ -70,6 +70,9 @@ class manufactory.BaseModule
       $(child).parents @selector
     byParent: (parent) ->
       $(parent).find @selector
+    on: (eventName, handler) ->
+      (if @global then $(document) else @module.root)
+        .on eventName, @selector, handler
 
   __buildDynamicElement: (element) ->
     fn = (filter) ->
@@ -77,5 +80,4 @@ class manufactory.BaseModule
         @__findElement(element).filter(filter)
       else
         @__findElement(element)
-    fn.selector = element.selector
-    _.extend(fn, @constructor.__dynamicElementMixin)
+    _.extend(fn, {module: @}, element, @constructor.__dynamicElementMixin)

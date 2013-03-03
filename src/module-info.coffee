@@ -65,6 +65,9 @@ class manufactory.ModuleInfo
     lines = splitToLines eventsString
     for line in lines
       [eventName, elementName, handlerName] = line.split whitespace
+      if not handlerName?
+        handlerName = elementName
+        elementName = 'root'
       @event eventName, elementName, handlerName
     @
     

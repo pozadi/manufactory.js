@@ -225,6 +225,9 @@
       },
       byParent: function(parent) {
         return $(parent).find(this.selector);
+      },
+      on: function(eventName, handler) {
+        return (this.global ? $(document) : this.module.root).on(eventName, this.selector, handler);
       }
     };
 
@@ -237,8 +240,9 @@
           return this.__findElement(element);
         }
       };
-      fn.selector = element.selector;
-      return _.extend(fn, this.constructor.__dynamicElementMixin);
+      return _.extend(fn, {
+        module: this
+      }, element, this.constructor.__dynamicElementMixin);
     };
 
     return BaseModule;
