@@ -134,6 +134,9 @@ $ ->
       bar: 'bar1'
     }
 
+  test "fail", ->
+    equal 1, 2
+
   ### TODO:
     @find()
     @updateElements()
