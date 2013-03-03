@@ -29,7 +29,7 @@ class manufactory.BaseModule
     @
 
   fire: (eventName, data) ->
-    manufactory.callbacks.trigger @, eventName, data
+    manufactory.callbacks._trigger @, eventName, data
     @
 
   setOption: (name, value) ->

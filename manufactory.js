@@ -55,7 +55,7 @@
     },
     callbacks: {
       _global: {},
-      trigger: function(moduleInstance, eventName, data) {
+      _trigger: function(moduleInstance, eventName, data) {
         var callbacks, _i, _len, _ref;
         _ref = [this.localCallbacks(moduleInstance, eventName), this.globalCallbacks(moduleInstance.constructor.NAME, eventName)];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -163,7 +163,7 @@
     };
 
     BaseModule.prototype.fire = function(eventName, data) {
-      manufactory.callbacks.trigger(this, eventName, data);
+      manufactory.callbacks._trigger(this, eventName, data);
       return this;
     };
 

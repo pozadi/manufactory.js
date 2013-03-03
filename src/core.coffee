@@ -21,7 +21,7 @@ window.manufactory =
       @init moduleName, context
   callbacks:
     _global: {}
-    trigger: (moduleInstance, eventName, data) ->
+    _trigger: (moduleInstance, eventName, data) ->
       for callbacks in [
         @localCallbacks(moduleInstance, eventName), 
         @globalCallbacks(moduleInstance.constructor.NAME, eventName)
