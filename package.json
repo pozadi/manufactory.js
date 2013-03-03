@@ -1,0 +1,22 @@
+{
+  "name": "manufactory.js",
+  "version": "0.0.0",
+  "testling": {
+    "files": "test/*.js",
+    "scripts": [
+      "vendor/jquery-1.8.3.min.js",
+      "vendor/qunit-1.10.0.js",
+      "vendor/qunit-tap.js",
+      "vendor/underscore-min.js",
+      "manufactory.js",
+      "tests/js/tests.js"
+    ],
+    "browsers": {
+      "ie": [ 8, 9 ],
+      "firefox": [ 13 ],
+      "chrome": [ 20 ],
+      "safari": [ 5.1 ],
+      "opera": [ 12 ]
+    }
+  }
+}

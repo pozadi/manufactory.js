@@ -1,3 +1,6 @@
+qunitTap QUnit, (str) ->
+  console.log str
+
 $ -> 
 
   moduleAHtmlOne = """
