@@ -113,7 +113,7 @@
     test("methods", function() {
       return equal((new TestModuleA($([]))).getMessage(), 'hello');
     });
-    return test("settings", function() {
+    test("settings", function() {
       deepEqual((new TestModuleA($('<div>'))).settings, TestModuleA.DEFAULT_SETTINGS);
       deepEqual((new TestModuleA($('<div data-baz="baz">'))).settings, TestModuleA.DEFAULT_SETTINGS);
       deepEqual((new TestModuleA($('<div data-foo="foo">'))).settings, {
@@ -139,9 +139,33 @@
         bar: 'bar1'
       });
     });
+    test("@find()", function() {
+      var obj, root;
+      root = $(moduleAHtmlOne);
+      obj = new TestModuleA(root);
+      return deepEqual(obj.find('[type=text]').get(), root.find('[type=text]').get());
+    });
+    test("@updateElements()", function() {
+      var obj, root;
+      root = $(moduleAHtmlOne);
+      obj = new TestModuleA(root);
+      deepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
+      root.append('<input type="text" />');
+      notDeepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
+      obj.updateElements();
+      return deepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
+    });
+    return test("@$element.update()", function() {
+      var obj, root;
+      root = $(moduleAHtmlOne);
+      obj = new TestModuleA(root);
+      deepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
+      root.append('<input type="text" />');
+      notDeepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
+      obj.$inputTypeText.update();
+      return deepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
+    });
     /* TODO:
-      @find()
-      @updateElements()
       manufactory.initAll()
       manufactory.init()
       DOM events (local/global)

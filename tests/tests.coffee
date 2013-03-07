@@ -134,9 +134,34 @@ $ ->
       bar: 'bar1'
     }
 
+  test "@find()", ->
+    root = $ moduleAHtmlOne
+    obj = new TestModuleA root
+    deepEqual obj.find('[type=text]').get(), root.find('[type=text]').get()
+
+  test "@updateElements()", ->
+    root = $ moduleAHtmlOne
+    obj = new TestModuleA root
+    deepEqual obj.$inputTypeText.get(), root.find('[type=text]').get()
+    root.append('<input type="text" />')
+    notDeepEqual obj.$inputTypeText.get(), root.find('[type=text]').get()
+    obj.updateElements()
+    deepEqual obj.$inputTypeText.get(), root.find('[type=text]').get()
+
+  # same as above, but instead of `@updateElements()` calls `@$element.update()`
+  test "@$element.update()", ->
+    root = $ moduleAHtmlOne
+    obj = new TestModuleA root
+    deepEqual obj.$inputTypeText.get(), root.find('[type=text]').get()
+    root.append('<input type="text" />')
+    notDeepEqual obj.$inputTypeText.get(), root.find('[type=text]').get()
+    obj.$inputTypeText.update()
+    deepEqual obj.$inputTypeText.get(), root.find('[type=text]').get()
+
+
+
+
   ### TODO:
-    @find()
-    @updateElements()
     manufactory.initAll()
     manufactory.init()
     DOM events (local/global)

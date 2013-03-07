@@ -43,7 +43,13 @@ class manufactory.BaseModule
       @["$$#{name}"] = @__buildDynamicElement element
 
   __findElement: (element) ->
-    $ element.selector, (if element.global then document else @root)
+    context = if element.global then document else @root
+    result = $ element.selector, context
+    result.update = ->
+      @splice 0, @length
+      @push el for el in $ element.selector, context
+      @
+    result
 
   __fixHandler: (handler) ->
     if typeof handler is 'string'

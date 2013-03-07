@@ -186,7 +186,20 @@
     };
 
     BaseModule.prototype.__findElement = function(element) {
-      return $(element.selector, (element.global ? document : this.root));
+      var context, result;
+      context = element.global ? document : this.root;
+      result = $(element.selector, context);
+      result.update = function() {
+        var el, _i, _len, _ref;
+        this.splice(0, this.length);
+        _ref = $(element.selector, context);
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          el = _ref[_i];
+          this.push(el);
+        }
+        return this;
+      };
+      return result;
     };
 
     BaseModule.prototype.__fixHandler = function(handler) {
@@ -390,16 +403,6 @@
       if (this.length) {
         return new manufactory._modules[moduleName](this.first());
       }
-    },
-    update: function() {
-      var el, _i, _len, _ref;
-      this.splice(0, this.length);
-      _ref = $(this.selector, this.context);
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        el = _ref[_i];
-        this.push(el);
-      }
-      return this;
     }
   });
 
