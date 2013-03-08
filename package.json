@@ -13,8 +13,8 @@
     ],
     "browsers": {
       "ie": [ 7, 8, 9, 10 ],
-      "firefox": [ 18, 19, 20, 21, "nightly" ],
-      "chrome": [ 20, 21, 22, 23, "canary" ],
+      "firefox": [ 18, 19, 20, "nightly" ],
+      "chrome": [ 23, 25, "canary" ],
       "safari": [ 5.1, 6.0 ],
       "opera": [ 11, 12, "next" ],
       "iphone": [ 6 ]
