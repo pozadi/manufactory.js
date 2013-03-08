@@ -6,14 +6,18 @@
   });
 
   $(function() {
-    var hiddenDom, moduleAHtmlAll, moduleAHtmlOne;
+    var baseDomEventsTest, baseInitTest, baseUpdateTest, hiddenDom, moduleACount, moduleAElementsTree, moduleAHtmlAll, moduleAHtmlOne;
     moduleAHtmlOne = "<div class=\"js-module\">\n  <button>hello</button>\n  <input type=\"button\" value=\"hello\">\n  <input type=\"text\" name=\"a\">\n  <input type=\"text\" name=\"b\">\n  <div class=\"js-some-div-\">\n    <div class=\"child\">abc</div>\n  </div>\n</div>";
     moduleAHtmlAll = "" + moduleAHtmlOne + "\n" + moduleAHtmlOne + "\n<div class=\"-global-div\">";
     hiddenDom = $('<div>').hide().appendTo('body');
+    moduleACount = function() {
+      return manufactory.find('test.modules.A').length;
+    };
+    moduleAElementsTree = ".js-module    / foo bar static    dynamic  global /\n\n  button, [type=button]/ allButtons !@#$%^&*()\_+±   \n  input[type=text] \n\n  / withEmptySelector\n\n  // comment\n  .js-some-div-  \n  .js-some-div- .child    // comment\n\n  .-global-div /global / Приве†\n* / all";
     QUnit.testStart(function(details) {
       $('<div>').html(moduleAHtmlAll).appendTo(hiddenDom);
       window.TestModuleA = manufactory.module('test.modules.A', function(M) {
-        M.tree("    .js-module    / foo bar static    dynamic  global /\n\n      button, [type=button]/ allButtons !@#$%^&*()\_+±   \n      input[type=text] \n\n      / withEmptySelector\n\n      // comment\n      .js-some-div-  \n      .js-some-div- .child    // comment\n\n      .-global-div /global / Приве†\n* / all");
+        M.tree(moduleAElementsTree);
         M.expectSettings('foo bar');
         M.defaultSettings({
           foo: 'default foo',
@@ -38,6 +42,7 @@
       var callbacks, callbacksList, instance, instances, key, key2, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       window.TestModuleA = window.TestModuleB = window.TestModuleEmpty = void 0;
       hiddenDom.empty();
+      $(document).off();
       _ref = manufactory.callbacks._global;
       for (key in _ref) {
         callbacksList = _ref[key];
@@ -52,6 +57,7 @@
         instances = _ref1[key];
         for (_j = 0, _len1 = instances.length; _j < _len1; _j++) {
           instance = instances[_j];
+          instance.root.off();
           _ref2 = instance.__eventHandlers;
           for (key2 in _ref2) {
             callbacks = _ref2[key2];
@@ -66,7 +72,7 @@
       return equal(TestModuleA, window.test.modules.A);
     });
     test("automatic initialisation", function() {
-      equal(manufactory.find('test.modules.A').length, 2);
+      equal(moduleACount(), 2);
       equal(manufactory.find(TestModuleB.NAME).length, 0);
       return equal(manufactory.find(TestModuleEmpty.NAME).length, 0);
     });
@@ -145,42 +151,118 @@
       obj = new TestModuleA(root);
       return deepEqual(obj.find('[type=text]').get(), root.find('[type=text]').get());
     });
-    test("@updateElements()", function() {
-      var obj, root;
+    baseUpdateTest = function(updateFn) {
+      return function() {
+        var obj, root;
+        root = $(moduleAHtmlOne);
+        obj = new TestModuleA(root);
+        deepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
+        root.append('<input type="text" />');
+        notDeepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
+        updateFn(obj);
+        return deepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
+      };
+    };
+    test("@updateElements()", baseUpdateTest(function(obj) {
+      return obj.updateElements();
+    }));
+    test("@$element.update()", baseUpdateTest(function(obj) {
+      return obj.$inputTypeText.update();
+    }));
+    baseInitTest = function(initFn) {
+      return function() {
+        equal(moduleACount(), 2);
+        hiddenDom.append(moduleAHtmlOne);
+        equal(moduleACount(), 2);
+        initFn();
+        equal(moduleACount(), 3);
+        equal(manufactory.find(TestModuleB.NAME).length, 0);
+        hiddenDom.append(moduleAHtmlOne);
+        initFn($('<div>'));
+        equal(moduleACount(), 3);
+        initFn(hiddenDom);
+        return equal(moduleACount(), 4);
+      };
+    };
+    test("manufactory.initAll()", baseInitTest(function(context) {
+      return manufactory.initAll(context);
+    }));
+    test("manufactory.init()", baseInitTest(function(context) {
+      return manufactory.init('test.modules.A', context);
+    }));
+    test("$.fn.module()", function() {
+      var obj1, obj2, root;
       root = $(moduleAHtmlOne);
-      obj = new TestModuleA(root);
-      deepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
-      root.append('<input type="text" />');
-      notDeepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
-      obj.updateElements();
-      return deepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
+      equal(moduleACount(), 2);
+      ok(root.module('test.modules.A') instanceof TestModuleA);
+      equal(moduleACount(), 3);
+      obj1 = new TestModuleA(root);
+      obj2 = root.module('test.modules.A');
+      equal(moduleACount(), 3);
+      return equal(obj1, obj2);
     });
-    return test("@$element.update()", function() {
-      var obj, root;
-      root = $(moduleAHtmlOne);
-      obj = new TestModuleA(root);
-      deepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
-      root.append('<input type="text" />');
-      notDeepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
-      obj.$inputTypeText.update();
-      return deepEqual(obj.$inputTypeText.get(), root.find('[type=text]').get());
-    });
+    baseDomEventsTest = function(defineEvents) {
+      return function() {
+        var MyModule, root;
+        MyModule = manufactory.module('EventTestModule', function(M) {
+          var baseHandler;
+          M.tree(moduleAElementsTree);
+          defineEvents(M);
+          baseHandler = function(getExpectedTarget) {
+            return function(targetEl, event, additionalData) {
+              ok(this instanceof MyModule);
+              equal(targetEl, getExpectedTarget(this));
+              equal(additionalData, 'additionalData');
+              return equal(event.target, targetEl);
+            };
+          };
+          return M.methods({
+            onRootClicked: baseHandler(function(module) {
+              return module.root[0];
+            }),
+            onInputChange: baseHandler(function(module) {
+              return module.$$inputTypeText(':first')[0];
+            }),
+            onGlobalDivLicked: baseHandler(function(module) {
+              return module.$globalDiv[0];
+            })
+          });
+        });
+        root = $(moduleAHtmlOne);
+        manufactory.initAll(root);
+        root.trigger('click', 'additionalData');
+        root.find('input[type=text]:first').trigger('change', 'additionalData');
+        return $('.-global-div').trigger('lick', 'additionalData');
+      };
+    };
+    test("DOM events (M.events())", 4 * 5, baseDomEventsTest(function(M) {
+      return M.events("click                  onRootClicked\nchange  inputTypeText  onInputChange\nlick    globalDiv      onGlobalDivLicked");
+    }));
+    test("DOM events (M.event(... root ...))", 4, baseDomEventsTest(function(M) {
+      return M.event('click', 'root', 'onRootClicked');
+    }));
+    test("DOM events (M.event(... local element  ...))", 4, baseDomEventsTest(function(M) {
+      return M.event('change', 'inputTypeText', 'onInputChange');
+    }));
+    test("DOM events (M.event(... local element, custom handler))", 4, baseDomEventsTest(function(M) {
+      return M.event('change', 'inputTypeText', function(targetEl, event, additionalData) {
+        ok(this instanceof EventTestModule);
+        equal(targetEl, this.$$inputTypeText(':first')[0]);
+        equal(additionalData, 'additionalData');
+        return equal(event.target, targetEl);
+      });
+    }));
+    return test("DOM events (M.event(... global element  ...))", 4 * 3, baseDomEventsTest(function(M) {
+      return M.event('lick  ', 'globalDiv', 'onGlobalDivLicked');
+    }));
     /* TODO:
-      manufactory.initAll()
-      manufactory.init()
-      DOM events (local/global)
-        M.events()
-        M.event()
-        triggering itself
-        handler arguments
+      
       module events (local/global)
         @on(), @off(), @fire()
         manufactory.on(), manufactory.off()
         M.moduleEvents()
         triggering itself
         handler arguments
-      $.fn.module()
-      $.fn.update()
     */
 
   });
