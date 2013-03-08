@@ -71,6 +71,7 @@ $ ->
 
   QUnit.testDone (details) ->
     window.TestModuleA = window.TestModuleB = window.TestModuleEmpty = undefined
+    window.test.modules = undefined
     hiddenDom.empty()
     $(document).off()
     for key, callbacksList of manufactory.callbacks._global
@@ -194,7 +195,7 @@ $ ->
 
   baseDomEventsTest = (defineEvents) ->
     ->
-      MyModule = manufactory.module 'EventTestModule', (M) ->
+      MyModule = manufactory.module 'test.modules.DomEventsTest', (M) ->
         M.tree moduleAElementsTree
         defineEvents M
         baseHandler = (getExpectedTarget) ->
@@ -230,7 +231,7 @@ $ ->
 
   test "DOM events (M.event(... local element, custom handler))", 4, baseDomEventsTest (M) ->
     M.event 'change', 'inputTypeText', (targetEl, event, additionalData) ->
-      ok (this instanceof EventTestModule)
+      ok (this instanceof test.modules.DomEventsTest)
       equal targetEl, @$$inputTypeText(':first')[0]
       equal additionalData, 'additionalData'
       equal event.target, targetEl
@@ -238,12 +239,56 @@ $ ->
   test "DOM events (M.event(... global element  ...))", 4 * 3, baseDomEventsTest (M) ->
     M.event 'lick  ', 'globalDiv', 'onGlobalDivLicked'
 
-  ### TODO:
-    
-    module events (local/global)
-      @on(), @off(), @fire()
-      manufactory.on(), manufactory.off()
-      M.moduleEvents()
-      triggering itself
-      handler arguments
-  ###
+  baseModuleEventsTest = (subscribe, unsubscribe) ->
+    ->
+      MyModule = manufactory.module ->
+      obj = new MyModule $()
+      fn = (additionalData, eventName) ->
+        ok (this instanceof MyModule)
+        equal additionalData, 'additionalData'
+        equal eventName, 'boom'
+      obj.fire 'boom'
+      subscribe obj, 'boom', fn
+      obj.fire 'boom', 'additionalData'
+      unsubscribe obj, 'boom', fn
+      obj.fire 'boom'
+
+  test "@on(), @off(), @fire()", 3, baseModuleEventsTest(
+    ((obj, event, fn) -> obj.on  event, fn),
+    ((obj, event, fn) -> obj.off event, fn)
+  )
+
+  test "manufactory.on(), manufactory.off(), @fire()", 3, baseModuleEventsTest(
+    ((obj, event, fn) -> manufactory.on  event, obj.constructor.NAME, fn),
+    ((obj, event, fn) -> manufactory.off event, obj.constructor.NAME, fn)
+  )
+
+  # 1 event * ( 4 listeners * 4 assertions in listener + 1 special assertion )
+  test "M.moduleEvents()", 4 * 4 + 1, ->
+    manufactory.module 'test.modules.ME.A', (M) ->
+      M.moduleEvents """
+        boom test.modules.ME.A onABoom
+      """
+      M.methods 
+        onABoom: (target, additionalData, eventName) ->
+          if this == target
+            ok(true)
+          ok(this instanceof test.modules.ME.A)
+          ok(target instanceof test.modules.ME.A)
+          equal additionalData, 'additionalData'
+          equal eventName, 'boom'
+    manufactory.module 'test.modules.ME.B', (M) ->
+      M.moduleEvents """
+        boom test.modules.ME.A onABoom
+      """
+      M.methods 
+        onABoom: (target, additionalData, eventName) ->
+          ok(this instanceof test.modules.ME.B)
+          ok(target instanceof test.modules.ME.A)
+          equal additionalData, 'additionalData'
+          equal eventName, 'boom'
+    objA1 = new test.modules.ME.A $()
+    objA2 = new test.modules.ME.A $()
+    objB1 = new test.modules.ME.B $()
+    objB2 = new test.modules.ME.B $()
+    objA1.fire 'boom', 'additionalData'

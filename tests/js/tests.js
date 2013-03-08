@@ -6,7 +6,7 @@
   });
 
   $(function() {
-    var baseDomEventsTest, baseInitTest, baseUpdateTest, hiddenDom, moduleACount, moduleAElementsTree, moduleAHtmlAll, moduleAHtmlOne;
+    var baseDomEventsTest, baseInitTest, baseModuleEventsTest, baseUpdateTest, hiddenDom, moduleACount, moduleAElementsTree, moduleAHtmlAll, moduleAHtmlOne;
     moduleAHtmlOne = "<div class=\"js-module\">\n  <button>hello</button>\n  <input type=\"button\" value=\"hello\">\n  <input type=\"text\" name=\"a\">\n  <input type=\"text\" name=\"b\">\n  <div class=\"js-some-div-\">\n    <div class=\"child\">abc</div>\n  </div>\n</div>";
     moduleAHtmlAll = "" + moduleAHtmlOne + "\n" + moduleAHtmlOne + "\n<div class=\"-global-div\">";
     hiddenDom = $('<div>').hide().appendTo('body');
@@ -41,6 +41,7 @@
     QUnit.testDone(function(details) {
       var callbacks, callbacksList, instance, instances, key, key2, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       window.TestModuleA = window.TestModuleB = window.TestModuleEmpty = void 0;
+      window.test.modules = void 0;
       hiddenDom.empty();
       $(document).off();
       _ref = manufactory.callbacks._global;
@@ -204,7 +205,7 @@
     baseDomEventsTest = function(defineEvents) {
       return function() {
         var MyModule, root;
-        MyModule = manufactory.module('EventTestModule', function(M) {
+        MyModule = manufactory.module('test.modules.DomEventsTest', function(M) {
           var baseHandler;
           M.tree(moduleAElementsTree);
           defineEvents(M);
@@ -246,25 +247,75 @@
     }));
     test("DOM events (M.event(... local element, custom handler))", 4, baseDomEventsTest(function(M) {
       return M.event('change', 'inputTypeText', function(targetEl, event, additionalData) {
-        ok(this instanceof EventTestModule);
+        ok(this instanceof test.modules.DomEventsTest);
         equal(targetEl, this.$$inputTypeText(':first')[0]);
         equal(additionalData, 'additionalData');
         return equal(event.target, targetEl);
       });
     }));
-    return test("DOM events (M.event(... global element  ...))", 4 * 3, baseDomEventsTest(function(M) {
+    test("DOM events (M.event(... global element  ...))", 4 * 3, baseDomEventsTest(function(M) {
       return M.event('lick  ', 'globalDiv', 'onGlobalDivLicked');
     }));
-    /* TODO:
-      
-      module events (local/global)
-        @on(), @off(), @fire()
-        manufactory.on(), manufactory.off()
-        M.moduleEvents()
-        triggering itself
-        handler arguments
-    */
-
+    baseModuleEventsTest = function(subscribe, unsubscribe) {
+      return function() {
+        var MyModule, fn, obj;
+        MyModule = manufactory.module(function() {});
+        obj = new MyModule($());
+        fn = function(additionalData, eventName) {
+          ok(this instanceof MyModule);
+          equal(additionalData, 'additionalData');
+          return equal(eventName, 'boom');
+        };
+        obj.fire('boom');
+        subscribe(obj, 'boom', fn);
+        obj.fire('boom', 'additionalData');
+        unsubscribe(obj, 'boom', fn);
+        return obj.fire('boom');
+      };
+    };
+    test("@on(), @off(), @fire()", 3, baseModuleEventsTest((function(obj, event, fn) {
+      return obj.on(event, fn);
+    }), (function(obj, event, fn) {
+      return obj.off(event, fn);
+    })));
+    test("manufactory.on(), manufactory.off(), @fire()", 3, baseModuleEventsTest((function(obj, event, fn) {
+      return manufactory.on(event, obj.constructor.NAME, fn);
+    }), (function(obj, event, fn) {
+      return manufactory.off(event, obj.constructor.NAME, fn);
+    })));
+    return test("M.moduleEvents()", 4 * 4 + 1, function() {
+      var objA1, objA2, objB1, objB2;
+      manufactory.module('test.modules.ME.A', function(M) {
+        M.moduleEvents("boom test.modules.ME.A onABoom");
+        return M.methods({
+          onABoom: function(target, additionalData, eventName) {
+            if (this === target) {
+              ok(true);
+            }
+            ok(this instanceof test.modules.ME.A);
+            ok(target instanceof test.modules.ME.A);
+            equal(additionalData, 'additionalData');
+            return equal(eventName, 'boom');
+          }
+        });
+      });
+      manufactory.module('test.modules.ME.B', function(M) {
+        M.moduleEvents("boom test.modules.ME.A onABoom");
+        return M.methods({
+          onABoom: function(target, additionalData, eventName) {
+            ok(this instanceof test.modules.ME.B);
+            ok(target instanceof test.modules.ME.A);
+            equal(additionalData, 'additionalData');
+            return equal(eventName, 'boom');
+          }
+        });
+      });
+      objA1 = new test.modules.ME.A($());
+      objA2 = new test.modules.ME.A($());
+      objB1 = new test.modules.ME.B($());
+      objB2 = new test.modules.ME.B($());
+      return objA1.fire('boom', 'additionalData');
+    });
   });
 
 }).call(this);
