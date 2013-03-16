@@ -1,4 +1,3 @@
-
 *Manufactory.js* is a small framework that allows you to create modules in such 
 style:
 
@@ -28,7 +27,7 @@ manufactory.module 'MyModule', (M) ->
 
 Manufactory.js supports all browsers that support jQuery.
 
-See last test run on [ci.testling.com](http://ci.testling.com/pozadi/manufactory.js)
+[![browser support](https://ci.testling.com/pozadi/manufactory.js.png)](https://ci.testling.com/pozadi/manufactory.js)
 
 
 ## License
