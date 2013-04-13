@@ -3,13 +3,8 @@ window.manufactory =
   _instances: {}
   find: (moduleName) ->
     @_instances[moduleName] or []
-  init: (moduleName, context = document) ->
-    selector = @_modules[moduleName].ROOT_SELECTOR
-    if selector
-      for el in $(selector, context).add $(context).filter selector
-        new @_modules[moduleName] $ el
-    else
-      []
+  init: (moduleName, context) ->
+    @_modules[moduleName].init(context)
   initAll: (context = document) ->
     for moduleName, Module of @_modules when Module.AUTO_INIT
       @init moduleName, context
@@ -22,23 +17,17 @@ manufactory.module = (moduleName, builder) ->
   #     ...
   unless builder
     builder = moduleName
-    moduleName = _.uniqueId 'LambdaModule'
-    lambdaModule = true
+    moduleName = null
 
-  newModule = class extends manufactory.BaseModule
-
-  newModule.NAME = moduleName
-  newModule.LAMBDA = !!lambdaModule
+  newModule = class extends manufactory.Module
+  newModule.constructor(moduleName)
 
   builder(new manufactory.ModuleInfo newModule)
 
-  manufactory._modules[moduleName] = newModule
+  newModule.__runAutoInit()
 
-  if newModule.AUTO_INIT
-    $ -> manufactory.init newModule.NAME
-
-  unless lambdaModule
-    parts = moduleName.split '.'
+  unless newModule.LAMBDA
+    parts = newModule.NAME.split '.'
     theName = parts.pop()
     currentScope = window
     for part in parts

@@ -1,4 +1,88 @@
-class manufactory.BaseModule
+class manufactory.Module
+
+  # Constants
+  GLOBAL = 'global'
+
+  # Utils
+  whitespace = /\s+/
+  splitToLines =  (str) -> _(str.split '\n').filter (i) -> i != ''
+  notOption = (i) -> i not in [GLOBAL]
+
+  selectorToName = (selector) ->
+    $.camelCase selector
+      .replace(/[^a-z0-9]+/ig, '-')
+      .replace(/^-/, '')
+      .replace(/-$/, '')
+      .replace(/^js-/, '')
+
+  @constructor = (moduleName) ->
+
+    if moduleName
+      @LAMBDA = false
+      @NAME = moduleName
+    else
+      @LAMBDA = true
+      @NAME = _.uniqueId 'LambdaModule'
+
+    manufactory._modules[@NAME] = @
+
+    @ELEMENTS = {}
+    @EVENTS = []
+    @DEFAULT_SETTINGS = {}
+    @EXPECTED_SETTINGS = []
+    @AUTO_INIT = true
+
+  @init = (context = document) ->
+    if @ROOT_SELECTOR
+      for el in $(@ROOT_SELECTOR, context).add $(context).filter @ROOT_SELECTOR
+        new @ $ el
+    else
+      []
+
+  # tmp
+  @__runAutoInit = ->
+    if @AUTO_INIT
+      $ => @init()
+
+  @autoInit = (value) ->
+    @AUTO_INIT = value
+
+  @root = (rootSelector) ->
+    @ROOT_SELECTOR = $.trim(rootSelector)
+
+  @element = (selector, name=null, global=false) ->
+    if name is null
+      name = selectorToName selector
+    @ELEMENTS[name] = {selector, global}
+
+  @tree = (treeString) ->
+    lines = splitToLines treeString
+    @root lines.shift()?.split('/')[0]
+    for line in lines
+      [selector, options] = _.map line.split('/'), $.trim
+      options = (options or '').split whitespace
+      name = _.filter(options, notOption)[0] or null
+      if selector
+        @element selector, name, GLOBAL in options
+
+  @event = (eventName, elementName, handler) ->
+    @EVENTS.push {elementName, eventName, handler}
+
+  @events = (eventsString) ->
+    lines = splitToLines eventsString
+    for line in lines
+      [eventName, elementName, handlerName] = line.split whitespace
+      if not handlerName?
+        handlerName = elementName
+        elementName = 'root'
+      @event eventName, elementName, handlerName
+    
+  @defaultSettings = (newDefaultSettings) ->
+    _.extend @DEFAULT_SETTINGS, newDefaultSettings
+
+  @expectSettings = (expectedSettings) ->
+    @EXPECTED_SETTINGS = 
+      _.union @EXPECTED_SETTINGS, expectedSettings.split whitespace
 
   constructor: (root, settings) ->
     {EXPECTED_SETTINGS, DEFAULT_SETTINGS, NAME} = @constructor
