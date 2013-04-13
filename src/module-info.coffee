@@ -18,7 +18,6 @@ class manufactory.ModuleInfo
   constructor: (@Module) ->
     @Module.ELEMENTS = {}
     @Module.EVENTS = []
-    @Module.MODULE_EVENTS = []
     @Module.DEFAULT_SETTINGS = {}
     @Module.EXPECTED_SETTINGS = []
     @Module.AUTO_INIT = true
@@ -71,18 +70,6 @@ class manufactory.ModuleInfo
       @event eventName, elementName, handlerName
     @
     
-  moduleEvent: (eventName, moduleName, handler) ->
-    @Module.MODULE_EVENTS.push {eventName, moduleName, handler}
-    @
-
-  # Set all modules events module wants to handle 
-  moduleEvents: (moduleEventsString) ->
-    lines = splitToLines moduleEventsString
-    for line in lines
-      [eventName, moduleName, handlerName] = line.split whitespace
-      @moduleEvent eventName, moduleName, handlerName
-    @
-  
   # Set default module settings
   defaultSettings: (newDefaultSettings) ->
     _.extend @Module.DEFAULT_SETTINGS, newDefaultSettings

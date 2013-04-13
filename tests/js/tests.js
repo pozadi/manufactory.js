@@ -6,7 +6,7 @@
   });
 
   $(function() {
-    var baseDomEventsTest, baseInitTest, baseModuleEventsTest, baseUpdateTest, hiddenDom, moduleACount, moduleAElementsTree, moduleAHtmlAll, moduleAHtmlOne;
+    var baseDomEventsTest, baseInitTest, baseUpdateTest, hiddenDom, moduleACount, moduleAElementsTree, moduleAHtmlAll, moduleAHtmlOne;
     moduleAHtmlOne = "<div class=\"js-module\">\n  <button>hello</button>\n  <input type=\"button\" value=\"hello\">\n  <input type=\"text\" name=\"a\">\n  <input type=\"text\" name=\"b\">\n  <div class=\"js-some-div-\">\n    <div class=\"child\">abc</div>\n  </div>\n</div>";
     moduleAHtmlAll = "" + moduleAHtmlOne + "\n" + moduleAHtmlOne + "\n<div class=\"-global-div\">";
     hiddenDom = $('<div>').hide().appendTo('body');
@@ -39,33 +39,10 @@
       return window.TestModuleEmpty = manufactory.module(function(M) {});
     });
     QUnit.testDone(function(details) {
-      var callbacks, callbacksList, instance, instances, key, key2, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       window.TestModuleA = window.TestModuleB = window.TestModuleEmpty = void 0;
       window.test.modules = void 0;
       hiddenDom.empty();
       $(document).off();
-      _ref = manufactory.callbacks._global;
-      for (key in _ref) {
-        callbacksList = _ref[key];
-        for (callbacks = _i = 0, _len = callbacksList.length; _i < _len; callbacks = ++_i) {
-          key2 = callbacksList[callbacks];
-          callbacks.disable();
-        }
-      }
-      manufactory.callbacks._global = {};
-      _ref1 = manufactory._instances;
-      for (key in _ref1) {
-        instances = _ref1[key];
-        for (_j = 0, _len1 = instances.length; _j < _len1; _j++) {
-          instance = instances[_j];
-          instance.root.off();
-          _ref2 = instance.__eventHandlers;
-          for (key2 in _ref2) {
-            callbacks = _ref2[key2];
-            callbacks.disable();
-          }
-        }
-      }
       manufactory._instances = {};
       return manufactory._modules = {};
     });
@@ -253,69 +230,9 @@
         return equal(event.target, targetEl);
       });
     }));
-    test("DOM events (M.event(... global element  ...))", 4 * 3, baseDomEventsTest(function(M) {
+    return test("DOM events (M.event(... global element  ...))", 4 * 3, baseDomEventsTest(function(M) {
       return M.event('lick  ', 'globalDiv', 'onGlobalDivLicked');
     }));
-    baseModuleEventsTest = function(subscribe, unsubscribe) {
-      return function() {
-        var MyModule, fn, obj;
-        MyModule = manufactory.module(function() {});
-        obj = new MyModule($());
-        fn = function(additionalData, eventName) {
-          ok(this instanceof MyModule);
-          equal(additionalData, 'additionalData');
-          return equal(eventName, 'boom');
-        };
-        obj.fire('boom');
-        subscribe(obj, 'boom', fn);
-        obj.fire('boom', 'additionalData');
-        unsubscribe(obj, 'boom', fn);
-        return obj.fire('boom');
-      };
-    };
-    test("@on(), @off(), @fire()", 3, baseModuleEventsTest((function(obj, event, fn) {
-      return obj.on(event, fn);
-    }), (function(obj, event, fn) {
-      return obj.off(event, fn);
-    })));
-    test("manufactory.on(), manufactory.off(), @fire()", 3, baseModuleEventsTest((function(obj, event, fn) {
-      return manufactory.on(event, obj.constructor.NAME, fn);
-    }), (function(obj, event, fn) {
-      return manufactory.off(event, obj.constructor.NAME, fn);
-    })));
-    return test("M.moduleEvents()", 4 * 4 + 1, function() {
-      var objA1, objA2, objB1, objB2;
-      manufactory.module('test.modules.ME.A', function(M) {
-        M.moduleEvents("boom test.modules.ME.A onABoom");
-        return M.methods({
-          onABoom: function(target, additionalData, eventName) {
-            if (this === target) {
-              ok(true);
-            }
-            ok(this instanceof test.modules.ME.A);
-            ok(target instanceof test.modules.ME.A);
-            equal(additionalData, 'additionalData');
-            return equal(eventName, 'boom');
-          }
-        });
-      });
-      manufactory.module('test.modules.ME.B', function(M) {
-        M.moduleEvents("boom test.modules.ME.A onABoom");
-        return M.methods({
-          onABoom: function(target, additionalData, eventName) {
-            ok(this instanceof test.modules.ME.B);
-            ok(target instanceof test.modules.ME.A);
-            equal(additionalData, 'additionalData');
-            return equal(eventName, 'boom');
-          }
-        });
-      });
-      objA1 = new test.modules.ME.A($());
-      objA2 = new test.modules.ME.A($());
-      objB1 = new test.modules.ME.B($());
-      objB2 = new test.modules.ME.B($());
-      return objA1.fire('boom', 'additionalData');
-    });
   });
 
 }).call(this);

@@ -20,18 +20,6 @@ class manufactory.BaseModule
   find: (args...) ->
     @root.find args...
 
-  on: (eventName, handler) ->
-    manufactory.callbacks.localCallbacks(@, eventName).add(handler)
-    @
-
-  off: (eventName, handler) ->
-    manufactory.callbacks.localCallbacks(@, eventName).remove(handler)
-    @
-
-  fire: (eventName, data) ->
-    manufactory.callbacks._trigger @, eventName, data
-    @
-
   setOption: (name, value) ->
     @settings[name] = value
     @
@@ -67,10 +55,6 @@ class manufactory.BaseModule
         @root
       else 
         @["$$#{elementName}"]).on eventName, @__fixHandler handler
-    for eventMeta in MODULE_EVENTS
-      {eventName, moduleName, handler} = eventMeta
-      manufactory.callbacks
-        .globalCallbacks(moduleName, eventName).add @__fixHandler handler
     @
 
   @__dynamicElementMixin:

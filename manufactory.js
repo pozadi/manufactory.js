@@ -12,14 +12,6 @@
     find: function(moduleName) {
       return this._instances[moduleName] || [];
     },
-    on: function(eventName, moduleName, callback) {
-      this.callbacks.globalCallbacks(moduleName, eventName).add(callback);
-      return this;
-    },
-    off: function(eventName, moduleName, callback) {
-      this.callbacks.globalCallbacks(moduleName, eventName).remove(callback);
-      return this;
-    },
     init: function(moduleName, context) {
       var el, selector, _i, _len, _ref, _results;
       if (context == null) {
@@ -52,26 +44,6 @@
         }
       }
       return _results;
-    },
-    callbacks: {
-      _global: {},
-      _trigger: function(moduleInstance, eventName, data) {
-        var callbacks, _i, _len, _ref;
-        _ref = [this.localCallbacks(moduleInstance, eventName), this.globalCallbacks(moduleInstance.constructor.NAME, eventName)];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          callbacks = _ref[_i];
-          callbacks.fireWith(moduleInstance, [data, eventName]);
-        }
-        return this;
-      },
-      localCallbacks: function(moduleInstance, eventName) {
-        var _base;
-        return (_base = (moduleInstance.__eventHandlers || (moduleInstance.__eventHandlers = {})))[eventName] || (_base[eventName] = $.Callbacks());
-      },
-      globalCallbacks: function(moduleName, eventName) {
-        var _base, _base1;
-        return (_base = ((_base1 = this._global)[moduleName] || (_base1[moduleName] = {})))[eventName] || (_base[eventName] = $.Callbacks());
-      }
     }
   };
 
@@ -152,21 +124,6 @@
       return (_ref = this.root).find.apply(_ref, args);
     };
 
-    BaseModule.prototype.on = function(eventName, handler) {
-      manufactory.callbacks.localCallbacks(this, eventName).add(handler);
-      return this;
-    };
-
-    BaseModule.prototype.off = function(eventName, handler) {
-      manufactory.callbacks.localCallbacks(this, eventName).remove(handler);
-      return this;
-    };
-
-    BaseModule.prototype.fire = function(eventName, data) {
-      manufactory.callbacks._trigger(this, eventName, data);
-      return this;
-    };
-
     BaseModule.prototype.setOption = function(name, value) {
       this.settings[name] = value;
       return this;
@@ -216,17 +173,12 @@
     };
 
     BaseModule.prototype["__bind"] = function() {
-      var ELEMENTS, EVENTS, MODULE_EVENTS, elementName, eventMeta, eventName, handler, moduleName, _i, _j, _len, _len1, _ref;
+      var ELEMENTS, EVENTS, MODULE_EVENTS, elementName, eventMeta, eventName, handler, _i, _len, _ref;
       _ref = this.constructor, ELEMENTS = _ref.ELEMENTS, EVENTS = _ref.EVENTS, MODULE_EVENTS = _ref.MODULE_EVENTS;
       for (_i = 0, _len = EVENTS.length; _i < _len; _i++) {
         eventMeta = EVENTS[_i];
         handler = eventMeta.handler, eventName = eventMeta.eventName, elementName = eventMeta.elementName;
         (!elementName || elementName === 'root' ? this.root : this["$$" + elementName]).on(eventName, this.__fixHandler(handler));
-      }
-      for (_j = 0, _len1 = MODULE_EVENTS.length; _j < _len1; _j++) {
-        eventMeta = MODULE_EVENTS[_j];
-        eventName = eventMeta.eventName, moduleName = eventMeta.moduleName, handler = eventMeta.handler;
-        manufactory.callbacks.globalCallbacks(moduleName, eventName).add(this.__fixHandler(handler));
       }
       return this;
     };
@@ -286,7 +238,6 @@
       this.Module = Module;
       this.Module.ELEMENTS = {};
       this.Module.EVENTS = [];
-      this.Module.MODULE_EVENTS = [];
       this.Module.DEFAULT_SETTINGS = {};
       this.Module.EXPECTED_SETTINGS = [];
       this.Module.AUTO_INIT = true;
@@ -360,26 +311,6 @@
           elementName = 'root';
         }
         this.event(eventName, elementName, handlerName);
-      }
-      return this;
-    };
-
-    ModuleInfo.prototype.moduleEvent = function(eventName, moduleName, handler) {
-      this.Module.MODULE_EVENTS.push({
-        eventName: eventName,
-        moduleName: moduleName,
-        handler: handler
-      });
-      return this;
-    };
-
-    ModuleInfo.prototype.moduleEvents = function(moduleEventsString) {
-      var eventName, handlerName, line, lines, moduleName, _i, _len, _ref;
-      lines = splitToLines(moduleEventsString);
-      for (_i = 0, _len = lines.length; _i < _len; _i++) {
-        line = lines[_i];
-        _ref = line.split(whitespace), eventName = _ref[0], moduleName = _ref[1], handlerName = _ref[2];
-        this.moduleEvent(eventName, moduleName, handlerName);
       }
       return this;
     };

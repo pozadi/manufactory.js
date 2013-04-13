@@ -3,12 +3,6 @@ window.manufactory =
   _instances: {}
   find: (moduleName) ->
     @_instances[moduleName] or []
-  on: (eventName, moduleName, callback) ->
-    @callbacks.globalCallbacks(moduleName, eventName).add(callback)
-    @
-  off: (eventName, moduleName, callback) ->
-    @callbacks.globalCallbacks(moduleName, eventName).remove(callback)
-    @
   init: (moduleName, context = document) ->
     selector = @_modules[moduleName].ROOT_SELECTOR
     if selector
@@ -19,19 +13,6 @@ window.manufactory =
   initAll: (context = document) ->
     for moduleName, Module of @_modules when Module.AUTO_INIT
       @init moduleName, context
-  callbacks:
-    _global: {}
-    _trigger: (moduleInstance, eventName, data) ->
-      for callbacks in [
-        @localCallbacks(moduleInstance, eventName), 
-        @globalCallbacks(moduleInstance.constructor.NAME, eventName)
-      ]
-        callbacks.fireWith moduleInstance, [data, eventName]
-      @
-    localCallbacks: (moduleInstance, eventName) ->
-      (moduleInstance.__eventHandlers or= {})[eventName] or= $.Callbacks()
-    globalCallbacks: (moduleName, eventName) ->
-      (@_global[moduleName] or= {})[eventName] or= $.Callbacks()
 
 
 manufactory.module = (moduleName, builder) ->
