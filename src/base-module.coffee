@@ -14,6 +14,20 @@ class manufactory.Module
       .replace(/^-/, '')
       .replace(/-$/, '')
       .replace(/^js-/, '')
+  
+  cloneArray = (arr) ->
+    if _.isArray arr
+      arr.slice(0)
+    else
+      []
+
+  cloneObject = (obj) ->
+    if _.isObject obj
+      _.clone obj
+    else
+      {}
+
+  @AUTO_INIT = true
 
   @build = (moduleName) ->
 
@@ -26,11 +40,10 @@ class manufactory.Module
 
     manufactory._modules[@NAME] = @
 
-    @ELEMENTS = {}
-    @EVENTS = []
-    @DEFAULT_SETTINGS = {}
-    @EXPECTED_SETTINGS = []
-    @AUTO_INIT = true
+    @ELEMENTS = cloneObject @ELEMENTS
+    @EVENTS = cloneArray @EVENTS
+    @DEFAULT_SETTINGS = cloneObject @DEFAULT_SETTINGS
+    @EXPECTED_SETTINGS = cloneArray @EXPECTED_SETTINGS
 
     _.defer =>
       $ => @init() if @AUTO_INIT
@@ -55,7 +68,9 @@ class manufactory.Module
 
   @tree = (treeString) ->
     lines = splitToLines treeString
-    @root lines.shift()?.split('/')[0]
+    rootSelector = $.trim(lines.shift()?.split('/')[0])
+    unless rootSelector is '%root%'
+      @root rootSelector
     for line in lines
       [selector, options] = _.map line.split('/'), $.trim
       options = (options or '').split whitespace
@@ -96,7 +111,7 @@ class manufactory.Module
     @initializer?()
 
   updateElements: ->
-    for name, element of @constructor.ELEMENTS
+    for name of @constructor.ELEMENTS
       @["$#{name}"].update()
 
   find: (args...) ->

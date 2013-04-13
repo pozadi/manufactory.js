@@ -67,7 +67,7 @@
   };
 
   manufactory.Module = (function() {
-    var GLOBAL, notOption, selectorToName, splitToLines, whitespace;
+    var GLOBAL, cloneArray, cloneObject, notOption, selectorToName, splitToLines, whitespace;
 
     GLOBAL = 'global';
 
@@ -87,6 +87,24 @@
       return $.camelCase(selector.replace(/[^a-z0-9]+/ig, '-').replace(/^-/, '').replace(/-$/, '').replace(/^js-/, ''));
     };
 
+    cloneArray = function(arr) {
+      if (_.isArray(arr)) {
+        return arr.slice(0);
+      } else {
+        return [];
+      }
+    };
+
+    cloneObject = function(obj) {
+      if (_.isObject(obj)) {
+        return _.clone(obj);
+      } else {
+        return {};
+      }
+    };
+
+    Module.AUTO_INIT = true;
+
     Module.build = function(moduleName) {
       var _this = this;
       if (moduleName) {
@@ -97,11 +115,10 @@
         this.NAME = _.uniqueId('LambdaModule');
       }
       manufactory._modules[this.NAME] = this;
-      this.ELEMENTS = {};
-      this.EVENTS = [];
-      this.DEFAULT_SETTINGS = {};
-      this.EXPECTED_SETTINGS = [];
-      this.AUTO_INIT = true;
+      this.ELEMENTS = cloneObject(this.ELEMENTS);
+      this.EVENTS = cloneArray(this.EVENTS);
+      this.DEFAULT_SETTINGS = cloneObject(this.DEFAULT_SETTINGS);
+      this.EXPECTED_SETTINGS = cloneArray(this.EXPECTED_SETTINGS);
       return _.defer(function() {
         return $(function() {
           if (_this.AUTO_INIT) {
@@ -154,9 +171,12 @@
     };
 
     Module.tree = function(treeString) {
-      var line, lines, name, options, selector, _i, _len, _ref, _ref1, _results;
+      var line, lines, name, options, rootSelector, selector, _i, _len, _ref, _ref1, _results;
       lines = splitToLines(treeString);
-      this.root((_ref = lines.shift()) != null ? _ref.split('/')[0] : void 0);
+      rootSelector = $.trim((_ref = lines.shift()) != null ? _ref.split('/')[0] : void 0);
+      if (rootSelector !== '%root%') {
+        this.root(rootSelector);
+      }
       _results = [];
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
@@ -223,11 +243,9 @@
     }
 
     Module.prototype.updateElements = function() {
-      var element, name, _ref, _results;
-      _ref = this.constructor.ELEMENTS;
+      var name, _results;
       _results = [];
-      for (name in _ref) {
-        element = _ref[name];
+      for (name in this.constructor.ELEMENTS) {
         _results.push(this["$" + name].update());
       }
       return _results;
