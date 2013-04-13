@@ -2,17 +2,22 @@
 style:
 
 ```coffeescript
-manufactory.module 'MyModule', (M) ->
-  M.tree """
+class MyModule extends manufactory.Module
+
+  @build 'MyModule'
+
+  @tree """
     .js-my-module
       .js-input
       .js-button
   """
-  M.events """
+
+  @events """
     click button showMessage
   """
-  M.methods
-      showMessage: -> alert @el.input.val()
+
+  showMessage: ->
+    alert @$input.val()
 ```
 
 ```html
