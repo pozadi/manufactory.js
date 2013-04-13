@@ -88,12 +88,14 @@
 
   <script type="text/coffeescript">
 
-    manufactory.module 'Todos', (M) ->
+    class Todos extends manufactory.Module
 
       onEnter = (fn) ->
         (_, e) -> fn.apply(@, arguments) if e.which == 13
 
-      M.tree """
+      @build 'Todos'
+
+      @tree """
         .js-todos-widget
           .js-all-checkbox
           .js-new-item
@@ -111,7 +113,7 @@
           .js-item-template
       """
 
-      M.events """
+      @events """
         change    allCheckbox      _toggleAll
         keyup     newItem          _addItemOnEnter
         change    itemCheckbox     _toggleItem
@@ -122,79 +124,79 @@
         click     clearCompleted   _clearCompleted
         click     setFilterButton  _setFilter
       """
+      
+      constructor: ->
+        super
+        @itemTpl = @$itemTemplate.html()
+        @setFilter('all')
+        @_updateStats()
 
-      M.methods
-        initializer: ->
-          @itemTpl = @$itemTemplate.html()
-          @setFilter('all')
-          @_updateStats()
+      addItem: (text) ->
+        todoItem = $(@itemTpl)
+        @$itemList.append(todoItem)
+        @updateItem(todoItem, text)
+        @setCompleted(todoItem, false)
 
-        addItem: (text) ->
-          todoItem = $(@itemTpl)
-          @$itemList.append(todoItem)
-          @updateItem(todoItem, text)
-          @setCompleted(todoItem, false)
+      updateItem: (todoItem, text) ->
+        @$$itemText.byParent(todoItem).text text
+        @$$itemField.byParent(todoItem).val text
 
-        updateItem: (todoItem, text) ->
-          @$$itemText.byParent(todoItem).text text
-          @$$itemField.byParent(todoItem).val text
+      setCompleted: (todoItem, completed) ->
+        $(todoItem)
+          .removeClass('active completed')
+          .addClass(if completed then 'completed' else 'active')
+        @$$itemCheckbox.byParent(todoItem).prop 'checked', completed
+        @_updateStats()
 
-        setCompleted: (todoItem, completed) ->
-          $(todoItem)
-            .removeClass('active completed')
-            .addClass(if completed then 'completed' else 'active')
-          @$$itemCheckbox.byParent(todoItem).prop 'checked', completed
-          @_updateStats()
+      removeItem: (todoItem) ->
+        todoItem.remove()
+        @_updateStats()
 
-        removeItem: (todoItem) ->
-          todoItem.remove()
-          @_updateStats()
+      setFilter: (filter) ->
+        @$root
+          .removeClass('filter-completed filter-active filter-all')
+          .addClass("filter-#{filter}")
 
-        setFilter: (filter) ->
-          @$root
-            .removeClass('filter-completed filter-active filter-all')
-            .addClass("filter-#{filter}")
+      _updateStats: ->
+        all = @$$todoItem().length
+        completed = @$$todoItem('.completed').length
+        active = all - completed
+        @$footer.toggle(all > 0)
+        @$clearCompleted.toggle(completed > 0)
+        @$completedCounter.text(completed)
+        @$leftCounter.text("#{active} #{if active == 1 then 'item' else 'items'} left")
 
-        _updateStats: ->
-          all = @$$todoItem().length
-          completed = @$$todoItem('.completed').length
-          active = all - completed
-          @$footer.toggle(all > 0)
-          @$clearCompleted.toggle(completed > 0)
-          @$completedCounter.text(completed)
-          @$leftCounter.text("#{active} #{if active == 1 then 'item' else 'items'} left")
+      _toggleAll: ->
+        completed = @$allCheckbox.prop('checked')
+        @setCompleted(todoItem, completed) for todoItem in @$$todoItem()
 
-        _toggleAll: ->
-          completed = @$allCheckbox.prop('checked')
-          @setCompleted(todoItem, completed) for todoItem in @$$todoItem()
+      _addItemOnEnter: onEnter ->
+        @addItem @$newItem.val()
+        @$newItem.val('')
 
-        _addItemOnEnter: onEnter ->
-          @addItem @$newItem.val()
-          @$newItem.val('')
+      _toggleItem: (itemCheckbox) ->
+        todoItem = @$$todoItem.byChild(itemCheckbox)
+        @setCompleted(todoItem, $(itemCheckbox).prop 'checked')
 
-        _toggleItem: (itemCheckbox) ->
-          todoItem = @$$todoItem.byChild(itemCheckbox)
-          @setCompleted(todoItem, $(itemCheckbox).prop 'checked')
+      _enterEditMode: (itemText) ->
+        todoItem = @$$todoItem.byChild(itemText).addClass('edit')
+        @$$itemField.byParent(todoItem).focus()
 
-        _enterEditMode: (itemText) ->
-          todoItem = @$$todoItem.byChild(itemText).addClass('edit')
-          @$$itemField.byParent(todoItem).focus()
+      _saveItem: (itemField) ->
+        todoItem = @$$todoItem.byChild(itemField).removeClass('edit')
+        @updateItem todoItem, $(itemField).val()
 
-        _saveItem: (itemField) ->
-          todoItem = @$$todoItem.byChild(itemField).removeClass('edit')
-          @updateItem todoItem, $(itemField).val()
+      _saveItemOnEnter: onEnter (itemField) ->
+        @_saveItem(itemField)
 
-        _saveItemOnEnter: onEnter (itemField) ->
-          @_saveItem(itemField)
+      _removeItem: (itemRemove) ->
+        @removeItem @$$todoItem.byChild(itemRemove)
 
-        _removeItem: (itemRemove) ->
-          @removeItem @$$todoItem.byChild(itemRemove)
+      _clearCompleted: ->
+        @removeItem(todoItem) for todoItem in @$$todoItem('.completed')
 
-        _clearCompleted: ->
-          @removeItem(todoItem) for todoItem in @$$todoItem('.completed')
-
-        _setFilter: (setFilterButton) ->
-          @setFilter $(setFilterButton).data('filter')
+      _setFilter: (setFilterButton) ->
+        @setFilter $(setFilterButton).data('filter')
 
   </script>
 

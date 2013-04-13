@@ -20,11 +20,13 @@ manufactory.module = (moduleName, builder) ->
     moduleName = null
 
   newModule = class extends manufactory.Module
-  newModule.constructor(moduleName)
+  newModule.build(moduleName)
 
   builder(new manufactory.ModuleInfo newModule)
 
-  newModule.__runAutoInit()
+  # TMP (until tests will be rewritten)
+  if newModule.AUTO_INIT
+    newModule.init() 
 
   unless newModule.LAMBDA
     parts = newModule.NAME.split '.'

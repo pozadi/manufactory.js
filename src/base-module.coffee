@@ -15,7 +15,7 @@ class manufactory.Module
       .replace(/-$/, '')
       .replace(/^js-/, '')
 
-  @constructor = (moduleName) ->
+  @build = (moduleName) ->
 
     if moduleName
       @LAMBDA = false
@@ -32,17 +32,15 @@ class manufactory.Module
     @EXPECTED_SETTINGS = []
     @AUTO_INIT = true
 
+    _.defer =>
+      $ => @init() if @AUTO_INIT
+
   @init = (context = document) ->
     if @ROOT_SELECTOR
       for el in $(@ROOT_SELECTOR, context).add $(context).filter @ROOT_SELECTOR
         new @ $ el
     else
       []
-
-  # tmp
-  @__runAutoInit = ->
-    if @AUTO_INIT
-      $ => @init()
 
   @autoInit = (value) ->
     @AUTO_INIT = value

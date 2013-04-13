@@ -48,9 +48,11 @@
       return _Class;
 
     })(manufactory.Module);
-    newModule.constructor(moduleName);
+    newModule.build(moduleName);
     builder(new manufactory.ModuleInfo(newModule));
-    newModule.__runAutoInit();
+    if (newModule.AUTO_INIT) {
+      newModule.init();
+    }
     if (!newModule.LAMBDA) {
       parts = newModule.NAME.split('.');
       theName = parts.pop();
@@ -85,7 +87,8 @@
       return $.camelCase(selector.replace(/[^a-z0-9]+/ig, '-').replace(/^-/, '').replace(/-$/, '').replace(/^js-/, ''));
     };
 
-    Module.constructor = function(moduleName) {
+    Module.build = function(moduleName) {
+      var _this = this;
       if (moduleName) {
         this.LAMBDA = false;
         this.NAME = moduleName;
@@ -98,7 +101,14 @@
       this.EVENTS = [];
       this.DEFAULT_SETTINGS = {};
       this.EXPECTED_SETTINGS = [];
-      return this.AUTO_INIT = true;
+      this.AUTO_INIT = true;
+      return _.defer(function() {
+        return $(function() {
+          if (_this.AUTO_INIT) {
+            return _this.init();
+          }
+        });
+      });
     };
 
     Module.init = function(context) {
@@ -116,15 +126,6 @@
         return _results;
       } else {
         return [];
-      }
-    };
-
-    Module.__runAutoInit = function() {
-      var _this = this;
-      if (this.AUTO_INIT) {
-        return $(function() {
-          return _this.init();
-        });
       }
     };
 
